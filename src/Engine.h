@@ -1,0 +1,62 @@
+#pragma once
+
+// System Headers
+#define GLEW_STATIC      // use static GLEW libs
+#include <GL/glew.h>     // include before GLFW (gl.h)
+#include <GLFW/glfw3.h>
+
+#include "Shader.h"
+#include "Camera.h"
+#include "Lighting.h"
+#include "GLFWInputBroadcaster.h"
+
+#define MS_PER_UPDATE 0.0333333333f
+#define CAST_RAY_LEN 1000.f
+
+class Engine : public BroadcastSystem::Listener
+{
+public:
+	GLFWwindow* m_pWindow;
+	LightingSystem* m_pLightingSystem;
+
+	// Constants
+	const int m_iWidth = 1280;
+	const int m_iHeight = 800;
+	const float m_fStepSize = 1.f / 120.f;
+
+	float m_fDeltaTime;	// Time between current frame and last frame
+	float m_fLastTime; // Time of last frame
+
+	Camera  *m_pCamera;
+	std::vector<Shader*> m_vpShaders;
+	Shader *m_pShaderLighting, *m_pShaderLamps;
+
+	GLint m_iViewLocLightingShader;
+	GLint m_iProjLocLightingShader;
+	GLint m_iViewPosLocLightingShader;
+	GLint m_iShininessLightingShader;
+
+public:
+	Engine();
+	~Engine();
+
+	bool init();
+
+	void mainLoop();
+
+	void update(float dt);
+
+	void render();
+
+	// Inherited from BroadcastSystem
+	void receiveEvent(Object * obj, const int event, void * data);
+
+private:
+	GLFWwindow* init_gl_context(std::string winName);
+	
+	void init_lighting();
+
+	void init_camera();
+
+	void init_shaders();
+};
