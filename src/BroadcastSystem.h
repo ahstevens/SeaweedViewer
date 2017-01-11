@@ -14,8 +14,7 @@ namespace BroadcastSystem
 		MOUSE_SCROLL,
 		KEY_PRESS,
 		KEY_UNPRESS,
-		SHRINK_RAY,
-		GROW_RAY
+		KEY_REPEAT
 	};
 
 	class Listener

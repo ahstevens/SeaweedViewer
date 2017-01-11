@@ -26,9 +26,9 @@ private:
 	static void mouse_position_callback(GLFWwindow* window, double xpos, double ypos);
 	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-	bool keys[1024];
-	bool firstMouse;
-	float lastX, lastY;
+	bool m_arrbActiveKeys[1024];
+	bool m_bFirstMouse;
+	float m_fLastMouseX, m_fLastMouseY;
 
 	GLFWInputBroadcaster(GLFWInputBroadcaster const&) = delete; // no copies of singletons (C++11)
 	void operator=(GLFWInputBroadcaster const&) = delete; // no assigning of singletons (C++11)

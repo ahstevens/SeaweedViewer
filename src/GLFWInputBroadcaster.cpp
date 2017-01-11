@@ -23,15 +23,15 @@ void GLFWInputBroadcaster::init(GLFWwindow * window)
 	glfwSetCursorPosCallback(window, mouse_position_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
-	memset(keys, 0, sizeof keys);
-	firstMouse = true;
-	lastX = 0;
-	lastY = 0;
+	memset(m_arrbActiveKeys, 0, sizeof m_arrbActiveKeys);
+	m_bFirstMouse = true;
+	m_fLastMouseX = 0;
+	m_fLastMouseY = 0;
 }
 
 bool GLFWInputBroadcaster::keyPressed(const int glfwKeyCode)
 {
-	return keys[glfwKeyCode];
+	return m_arrbActiveKeys[glfwKeyCode];
 }
 
 void GLFWInputBroadcaster::poll()
@@ -52,12 +52,16 @@ void GLFWInputBroadcaster::key_callback(GLFWwindow* window, int key, int scancod
 	{
 		if (action == GLFW_PRESS)
 		{
-			getInstance().keys[key] = true;
+			getInstance().m_arrbActiveKeys[key] = true;
 			getInstance().notify(NULL, BroadcastSystem::EVENT::KEY_PRESS, &key);
+		}
+		else if (action == GLFW_REPEAT)
+		{
+			getInstance().notify(NULL, BroadcastSystem::EVENT::KEY_REPEAT, &key);
 		}
 		else if (action == GLFW_RELEASE)
 		{
-			getInstance().keys[key] = false;
+			getInstance().m_arrbActiveKeys[key] = false;
 			getInstance().notify(NULL, BroadcastSystem::EVENT::KEY_UNPRESS, &key);
 		}
 	}
@@ -73,18 +77,18 @@ void GLFWInputBroadcaster::mouse_button_callback(GLFWwindow * window, int button
 
 void GLFWInputBroadcaster::mouse_position_callback(GLFWwindow * window, double xpos, double ypos)
 {
-	if (getInstance().firstMouse)
+	if (getInstance().m_bFirstMouse)
 	{
-		getInstance().lastX = static_cast<GLfloat>(xpos);
-		getInstance().lastY = static_cast<GLfloat>(ypos);
-		getInstance().firstMouse = false;
+		getInstance().m_fLastMouseX = static_cast<GLfloat>(xpos);
+		getInstance().m_fLastMouseY = static_cast<GLfloat>(ypos);
+		getInstance().m_bFirstMouse = false;
 	}
 
-	GLfloat xoffset = static_cast<GLfloat>(xpos) - getInstance().lastX;
-	GLfloat yoffset = getInstance().lastY - static_cast<GLfloat>(ypos);  // Reversed since y-coordinates go from bottom to left
+	GLfloat xoffset = static_cast<GLfloat>(xpos) - getInstance().m_fLastMouseX;
+	GLfloat yoffset = getInstance().m_fLastMouseY - static_cast<GLfloat>(ypos);  // Reversed since y-coordinates go from bottom to left
 
-	getInstance().lastX = static_cast<GLfloat>(xpos);
-	getInstance().lastY = static_cast<GLfloat>(ypos);
+	getInstance().m_fLastMouseX = static_cast<GLfloat>(xpos);
+	getInstance().m_fLastMouseY = static_cast<GLfloat>(ypos);
 
 	float offset[2] = { static_cast<float>(xoffset), static_cast<float>(yoffset) };
 
