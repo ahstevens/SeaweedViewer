@@ -1,13 +1,14 @@
 #pragma once
 
-// System Headers
-#define GLEW_STATIC      // use static GLEW libs
+#ifndef GLEW_STATIC
+#define GLEW_STATIC
+#endif // !GLEW_STATIC
 #include <GL/glew.h>     // include before GLFW (gl.h)
 #include <GLFW/glfw3.h>
 
 #include "Shader.h"
 #include "Camera.h"
-#include "Lighting.h"
+#include "LightingSystem.h"
 #include "GLFWInputBroadcaster.h"
 
 #define MS_PER_UPDATE 0.0333333333f

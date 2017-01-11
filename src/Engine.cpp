@@ -2,6 +2,8 @@
 
 #include "Engine.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 Engine::Engine()
 	: m_pWindow(NULL)
 	, m_pLightingSystem(NULL)
@@ -109,7 +111,7 @@ void Engine::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Use corresponding shader when setting uniforms/drawing objects
-	m_pShaderLighting->Use();
+	m_pShaderLighting->use();
 	glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
 
 	m_pLightingSystem->sLight.position = m_pCamera->getPosition();
@@ -137,9 +139,9 @@ void Engine::render()
 	{
 		if (shader->status())
 		{
-			shader->Use();
-			glUniformMatrix4fv(glGetUniformLocation(shader->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(glGetUniformLocation(shader->Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+			shader->use();
+			glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
 			if (shader == m_pShaderLamps)
 			{
@@ -154,7 +156,7 @@ void Engine::render()
 		}
 	}
 
-	Shader::Off();
+	Shader::off();
 }
 
 GLFWwindow* Engine::init_gl_context(std::string winName)
@@ -231,8 +233,8 @@ void Engine::init_shaders()
 	m_vpShaders.push_back(m_pShaderLamps);
 
 	// Get the uniform locations
-	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->Program, "view");
-	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->Program, "projection");
-	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->Program, "viewPos");
-	m_iShininessLightingShader = glGetUniformLocation(m_pShaderLighting->Program, "material.shininess");
+	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "view");
+	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "projection");
+	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
+	m_iShininessLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "material.shininess");
 }

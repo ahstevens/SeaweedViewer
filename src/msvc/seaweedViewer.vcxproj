@@ -129,13 +129,14 @@
     <ClInclude Include="..\Camera.h" />
     <ClInclude Include="..\Engine.h" />
     <ClInclude Include="..\GLFWInputBroadcaster.h" />
-    <ClInclude Include="..\Lighting.h" />
+    <ClInclude Include="..\LightingSystem.h" />
     <ClInclude Include="..\Object.h" />
     <ClInclude Include="..\Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Engine.cpp" />
     <ClCompile Include="..\GLFWInputBroadcaster.cpp" />
+    <ClCompile Include="..\LightingSystem.cpp" />
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
