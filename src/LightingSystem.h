@@ -47,7 +47,7 @@ public:
 	LightingSystem();
 
     // Uses the current shader
-	void SetupLighting(Shader s);
+	void setupLighting(Shader s);
 
 	bool addDLight(glm::vec3 direction = glm::vec3(-1.0f)
 		, glm::vec3 ambient = glm::vec3(0.1f)
@@ -81,9 +81,10 @@ public:
 	void receiveEvent(Object * obj, const int event, void * data);
 
 private:
-	GLuint VBO, VAO, EBO;
-	GLsizei nIndices;
-	GLboolean meshInitiated;
+	GLuint m_uiVBO, m_uiVAO, m_uiEBO;
+	GLsizei m_nIndices;
+	GLboolean m_bMeshInitialized;
+	GLboolean m_bRefreshShader;
 
 	void setupLightMesh();
 };

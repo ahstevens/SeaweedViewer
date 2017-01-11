@@ -13,12 +13,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-LightingSystem::LightingSystem() : meshInitiated(false)
+LightingSystem::LightingSystem() 
+	: m_bMeshInitialized(false)
+	, m_bRefreshShader(true)
 {
 }
 
 // Uses the current shader
-void LightingSystem::SetupLighting(Shader s)
+void LightingSystem::setupLighting(Shader s)
 {
 	// Directional light
 	if (dLight.on)
@@ -133,12 +135,12 @@ bool LightingSystem::addSLight(glm::vec3 position, glm::vec3 direction, glm::vec
 
 void LightingSystem::draw(Shader s)
 {
-	if(!meshInitiated)
+	if(!m_bMeshInitialized)
 		this->setupLightMesh();
 
 	glm::mat4 model;
 
-	glBindVertexArray(this->VAO);
+	glBindVertexArray(this->m_uiVAO);
 	for (GLuint i = 0; i < pLights.size(); ++i)
 	{
 		if(pLights[i].on)
@@ -150,7 +152,7 @@ void LightingSystem::draw(Shader s)
 		model = glm::translate(model, pLights[i].position);
 		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
 		glUniformMatrix4fv(glGetUniformLocation(s.m_nProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		glDrawElements(GL_TRIANGLES, this->nIndices, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, this->m_nIndices, GL_UNSIGNED_INT, 0);
 	}
 	glBindVertexArray(0);
 
@@ -204,25 +206,25 @@ void LightingSystem::setupLightMesh()
 				1, 0, 5, 5, 4, 1 }; // Face 6
 
 	// Send data and its description to GPU
-	glGenVertexArrays(1, &this->VAO);
-	glGenBuffers(1, &this->VBO);
-	glGenBuffers(1, &this->EBO);
+	glGenVertexArrays(1, &m_uiVAO);
+	glGenBuffers(1, &m_uiVBO);
+	glGenBuffers(1, &m_uiEBO);
 
-	glBindVertexArray(this->VAO);
+	glBindVertexArray(m_uiVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_uiVBO);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_uiEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
-	nIndices = static_cast<GLsizei>( indices.size() );
+	m_nIndices = static_cast<GLsizei>( indices.size() );
 
-	meshInitiated = true;
+	m_bMeshInitialized = true;
 }
 
 #endif

@@ -115,7 +115,7 @@ void Engine::render()
 	m_pLightingSystem->sLight.position = m_pCamera->getPosition();
 	m_pLightingSystem->sLight.direction = glm::vec3(m_pCamera->getOrientation()[2]);
 
-	m_pLightingSystem->SetupLighting(*m_pShaderLighting);
+	m_pLightingSystem->setupLighting(*m_pShaderLighting);
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
