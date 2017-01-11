@@ -29,21 +29,21 @@ namespace BroadcastSystem
 	public:
 		void attach(Listener *obs)
 		{
-			listeners.push_back(obs);
+			m_vpListeners.push_back(obs);
 		}
 
 		void detach(Listener *obs)
 		{
-			listeners.erase(std::remove(listeners.begin(), listeners.end(), obs), listeners.end());
+			m_vpListeners.erase(std::remove(m_vpListeners.begin(), m_vpListeners.end(), obs), m_vpListeners.end());
 		}
 
 	protected:
 		virtual void notify(Object* obj, const int event, void* data = NULL)
 		{
-			for (auto obs : listeners) obs->receiveEvent(obj, event, data);
+			for (auto obs : m_vpListeners) obs->receiveEvent(obj, event, data);
 		}
 
 	private:
-		std::vector<Listener *> listeners;
+		std::vector<Listener *> m_vpListeners;
 	};
  }
