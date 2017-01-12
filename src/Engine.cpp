@@ -61,9 +61,9 @@ bool Engine::init()
 	GLFWInputBroadcaster::getInstance().init(m_pWindow);
 	GLFWInputBroadcaster::getInstance().attach(this);  // Register self with input broadcaster
 
-	init_shaders();
-	init_camera();
 	init_lighting();
+	init_camera();
+	init_shaders();
 
 	return true;
 }
@@ -112,8 +112,8 @@ void Engine::render()
 	m_pShaderLighting->use();
 	glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
 
-	m_pLightingSystem->sLight.position = m_pCamera->getPosition();
-	m_pLightingSystem->sLight.direction = glm::vec3(m_pCamera->getOrientation()[2]);
+	m_pLightingSystem->sLights[0].position = m_pCamera->getPosition();
+	m_pLightingSystem->sLights[0].direction = glm::vec3(m_pCamera->getOrientation()[2]);
 
 	m_pLightingSystem->setupLighting(*m_pShaderLighting);
 
@@ -216,173 +216,7 @@ void Engine::init_camera()
 void Engine::init_shaders()
 {
 	// Build and compile our shader program
-	m_pShaderLighting = new Shader(
-		// VERTEX SHADER
-		"#version 330 core\n"
-		"layout(location = 0) in vec3 position;\n"
-		"layout(location = 1) in vec3 normal;\n"
-		"layout(location = 2) in vec2 texCoords;\n"
-
-		"out vec3 Normal;\n"
-		"out vec3 FragPos;\n"
-		"out vec2 TexCoords;\n"
-
-		"uniform mat4 model;\n"
-		"uniform mat4 view;\n"
-		"uniform mat4 projection;\n"
-		
-		"void main()\n"
-		"{\n"
-		"	gl_Position = projection * view *  model * vec4(position, 1.0f);\n"
-		"	FragPos = vec3(model * vec4(position, 1.0f));\n"
-		"	Normal = mat3(transpose(inverse(model))) * normal;\n"
-		"	TexCoords = texCoords;\n"
-		"}\n",
-
-		// FRAGMENT SHADER
-		"#version 330 core\n"
-		"#define NR_POINT_LIGHTS 4\n"
-
-		"struct Material {\n"
-		"    sampler2D diffuse;\n"
-		"    sampler2D specular;\n"
-		"    float shininess;\n"
-		"};\n"
-
-		"struct DirLight {\n"
-		"    vec3 direction;\n"
-		"    vec3 ambient;\n"
-		"    vec3 diffuse;\n"
-		"    vec3 specular;\n"
-		"};\n"
-
-		"struct PointLight {\n"
-		"    vec3 position;\n"
-		"    float constant;\n"
-		"    float linear;\n"
-		"    float quadratic;\n"
-		"    vec3 ambient;\n"
-		"    vec3 diffuse;\n"
-		"    vec3 specular;\n"
-		"};\n"
-
-		"struct SpotLight {\n"
-		"    vec3 position;\n"
-		"    vec3 direction;\n"
-		"    float cutOff;\n"
-		"    float outerCutOff;\n"
-		"    float constant;\n"
-		"    float linear;\n"
-		"    float quadratic;\n"
-		"    vec3 ambient;\n"
-		"    vec3 diffuse;\n"
-		"    vec3 specular;\n"
-		"};\n"
-
-		"in vec3 FragPos;\n"
-		"in vec3 Normal;\n"
-		"in vec2 TexCoords;\n"
-
-		"out vec4 color;\n"
-
-		"uniform vec3 viewPos;\n"
-		"uniform DirLight dirLight;\n"
-		"uniform PointLight pointLights[NR_POINT_LIGHTS];\n"
-		"uniform SpotLight spotLight;\n"
-		"uniform Material material;\n"
-
-		// Function prototypes
-		"vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);\n"
-		"vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);\n"
-		"vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);\n"
-
-		"void main()\n"
-		"{\n"
-		     // Properties
-		"    vec3 norm = normalize(Normal);\n"
-		"    vec3 viewDir = normalize(viewPos - FragPos);\n"
-
-		     // == ======================================
-		     // Our lighting is set up in 3 phases: directional, point lights and an optional flashlight
-		     // For each phase, a calculate function is defined that calculates the corresponding color
-		     // per lamp. In the main() function we take all the calculated colors and sum them up for
-		     // this fragment's final color.
-		     // == ======================================
-		     // Phase 1: Directional lighting
-		"    vec3 result = CalcDirLight(dirLight, norm, viewDir);\n"
-		     // Phase 2: Point lights\n"
-		"    for(int i = 0; i < NR_POINT_LIGHTS; i++)\n"
-		"        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);\n"
-		     // Phase 3: Spot light\n"
-		"    result += CalcSpotLight(spotLight, norm, FragPos, viewDir);\n"
-
-		"    color = vec4(result, 1.0);\n"
-		"}\n"
-
-		// Calculates the color when using a directional light.
-		"vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)\n"
-		"{\n"
-		"    vec3 lightDir = normalize(-light.direction);\n"
-		     // Diffuse shading
-		"    float diff = max(dot(normal, lightDir), 0.0);\n"
-		     // Specular shading
-		"    vec3 reflectDir = reflect(-lightDir, normal);\n"
-		"    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n"
-		     // Combine results
-		"    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n"
-		"    return (ambient + diffuse + specular);\n"
-		"}\n"
-
-		// Calculates the color when using a point light.
-		"vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n"
-		"{\n"
-		"    vec3 lightDir = normalize(light.position - fragPos);\n"
-		     // Diffuse shading
-		"    float diff = max(dot(normal, lightDir), 0.0);\n"
-		     // Specular shading
-		"    vec3 reflectDir = reflect(-lightDir, normal);\n"
-		"    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n"
-		     // Attenuation
-		"    float distance = length(light.position - fragPos);\n"
-		"    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n"
-		     // Combine results
-		"    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n"
-		"    ambient *= attenuation;\n"
-		"    diffuse *= attenuation;\n"
-		"    specular *= attenuation;\n"
-		"    return (ambient + diffuse + specular);\n"
-		"}\n"
-
-		// Calculates the color when using a spot light.
-		"vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n"
-		"{\n"
-		"    vec3 lightDir = normalize(light.position - fragPos);\n"
-		     // Diffuse shading
-		"    float diff = max(dot(normal, lightDir), 0.0);\n"
-		     // Specular shading
-		"    vec3 reflectDir = reflect(-lightDir, normal);\n"
-		"    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n"
-		     // Attenuation
-		"    float distance = length(light.position - fragPos);\n"
-		"    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n"
-		     // Spotlight intensity
-		"    float theta = dot(lightDir, normalize(-light.direction));\n"
-		"    float epsilon = light.cutOff - light.outerCutOff;\n"
-		"    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);\n"
-		     // Combine results
-		"    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n"
-		"    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n"
-		"    ambient *= attenuation * intensity;\n"
-		"    diffuse *= attenuation * intensity;\n"
-		"    specular *= attenuation * intensity;\n"
-		"    return (ambient + diffuse + specular);\n"
-		"}\n"
-		);
+	m_pShaderLighting = m_pLightingSystem->getShader();
 	m_pShaderLighting->enable();
 	m_vpShaders.push_back(m_pShaderLighting);
 

@@ -8,9 +8,6 @@
 
 #include <glm/glm.hpp>
 
-#define MAX_N_PLIGHTS 4
-
-
 class LightingSystem : public BroadcastSystem::Listener
 {
 public:
@@ -39,12 +36,13 @@ public:
 	};
 
 public:
-	DLight dLight;
+	std::vector<DLight> dLights;
 	std::vector<PLight> pLights;
-	SLight sLight;
+	std::vector<SLight> sLights;
 
 public:
 	LightingSystem();
+	~LightingSystem();
 
     // Uses the current shader
 	void setupLighting(Shader s);
@@ -75,6 +73,8 @@ public:
 		, GLfloat cutOffDeg = 12.5f
 		, GLfloat outerCutOffDeg = 15.0f
 		);
+
+	Shader* getShader();
 
 	void draw(Shader s);
 
