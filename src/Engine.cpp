@@ -15,6 +15,8 @@ Engine::Engine()
 	, m_iViewLocLightingShader(-1)
 	, m_iProjLocLightingShader(-1)
 	, m_iViewPosLocLightingShader(-1)
+	, m_pSphere(NULL)
+	, m_pModel(NULL)
 {
 }
 
@@ -65,6 +67,8 @@ bool Engine::init()
 	init_shaders();
 
 	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f));
+
+	m_pModel = new Model("../../src/teapot.obj");
 
 	return true;
 }
