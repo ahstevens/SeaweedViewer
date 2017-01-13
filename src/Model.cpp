@@ -34,14 +34,16 @@ bool Model::load(std::string objName)
 	}
 
 	if (!ret) {
-		exit(1);
+		return false;
 	}
 
 	// Loop over shapes
-	for (size_t s = 0; s < shapes.size(); s++) {
+	for (size_t s = 0; s < shapes.size(); s++) 
+	{
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
-		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) 
+		{
 			int fv = shapes[s].mesh.num_face_vertices[f];
 
 			// Loop over vertices in the face.
@@ -69,6 +71,7 @@ bool Model::load(std::string objName)
 			shapes[s].mesh.material_ids[f];
 		}
 	}
+	return true;
 }
 
 void Model::initGL()
@@ -120,6 +123,6 @@ void Model::draw(Shader s)
 	
 	// Draw mesh
 	glBindVertexArray(this->m_glVAO);
-	glDrawElements(GL_TRIANGLES, m_vuiIndices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_vuiIndices.size()), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
