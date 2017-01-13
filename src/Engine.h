@@ -11,6 +11,8 @@
 #include "LightingSystem.h"
 #include "GLFWInputBroadcaster.h"
 
+#include "Icosphere.h" // example
+
 #define MS_PER_UPDATE 0.0333333333f
 #define CAST_RAY_LEN 1000.f
 
@@ -35,7 +37,8 @@ public:
 	GLint m_iViewLocLightingShader;
 	GLint m_iProjLocLightingShader;
 	GLint m_iViewPosLocLightingShader;
-	GLint m_iShininessLightingShader;
+
+	Icosphere* m_pSphere;
 
 public:
 	Engine();

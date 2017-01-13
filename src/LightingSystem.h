@@ -33,6 +33,7 @@ public:
 		glm::vec3 direction;
 		GLfloat cutOff;
 		GLfloat outerCutOff;
+		bool attachedToCamera;
 	};
 
 public:
@@ -72,6 +73,7 @@ public:
 		, GLfloat quadratic = 0.032f
 		, GLfloat cutOffDeg = 12.5f
 		, GLfloat outerCutOffDeg = 15.0f
+		, bool attachToCamera = true
 		);
 
 	Shader* getShader();

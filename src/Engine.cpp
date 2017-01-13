@@ -15,7 +15,6 @@ Engine::Engine()
 	, m_iViewLocLightingShader(-1)
 	, m_iProjLocLightingShader(-1)
 	, m_iViewPosLocLightingShader(-1)
-	, m_iShininessLightingShader(-1)
 {
 }
 
@@ -65,6 +64,8 @@ bool Engine::init()
 	init_camera();
 	init_shaders();
 
+	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f));
+
 	return true;
 }
 
@@ -112,8 +113,14 @@ void Engine::render()
 	m_pShaderLighting->use();
 	glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
 
-	m_pLightingSystem->sLights[0].position = m_pCamera->getPosition();
-	m_pLightingSystem->sLights[0].direction = glm::vec3(m_pCamera->getOrientation()[2]);
+	for (auto &sl : m_pLightingSystem->sLights)
+	{
+		if (sl.attachedToCamera)
+		{
+			sl.position = m_pCamera->getPosition();
+			sl.direction = glm::vec3(m_pCamera->getOrientation()[2]);
+		}
+	}
 
 	m_pLightingSystem->setupLighting(*m_pShaderLighting);
 
@@ -130,9 +137,6 @@ void Engine::render()
 	glUniformMatrix4fv(m_iViewLocLightingShader, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(m_iProjLocLightingShader, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// Set material properties
-	glUniform1f(m_iShininessLightingShader, 32.0f);
-
 	for (auto& shader : m_vpShaders)
 	{
 		if (shader->status())
@@ -147,9 +151,7 @@ void Engine::render()
 			}
 			else
 			{
-
-				// DRAW HERE
-
+				m_pSphere->draw(*shader);
 			}
 		}
 	}
@@ -194,22 +196,21 @@ void Engine::init_lighting()
 	GLFWInputBroadcaster::getInstance().attach(m_pLightingSystem);
 
 	// Directional light
-	m_pLightingSystem->addDLight(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.1f), glm::vec3(0.25f), glm::vec3(0.5f));
-	m_pLightingSystem->addDLight(glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.1f), glm::vec3(0.25f), glm::vec3(0.5f));
+	m_pLightingSystem->addDLight(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.1f), glm::vec3(0.5f), glm::vec3(1.f));
 
 	// Positions of the point lights
-	m_pLightingSystem->addPLight(glm::vec3(0.f, 50.f, 0.f));
-	m_pLightingSystem->addPLight(glm::vec3(0.f, 50.f, -50.f));
-	m_pLightingSystem->addPLight(glm::vec3(50.f, 50.f, 0.f));
-	m_pLightingSystem->addPLight(glm::vec3(50.f, 50.f, -50.f));
+	m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, 5.f));
+	m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, -5.f));
+	m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, 5.f));
+	m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, -5.f));
 
 	// Spotlight
-	m_pLightingSystem->addSLight();
+	//m_pLightingSystem->addSLight();
 }
 
 void Engine::init_camera()
 {
-	m_pCamera = new Camera(glm::vec3(0.0f, 50.0f, 50.0f));
+	m_pCamera = new Camera(glm::vec3(0.f, 0.f, 15.f));
 	GLFWInputBroadcaster::getInstance().attach(m_pCamera);
 }
 
@@ -252,5 +253,4 @@ void Engine::init_shaders()
 	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "view");
 	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "projection");
 	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
-	m_iShininessLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "material.shininess");
 }

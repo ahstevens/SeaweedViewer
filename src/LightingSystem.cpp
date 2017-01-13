@@ -140,7 +140,7 @@ bool LightingSystem::addPLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 
 	return true;
 }
 
-bool LightingSystem::addSLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat cutOffDeg, GLfloat outerCutOffDeg)
+bool LightingSystem::addSLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat cutOffDeg, GLfloat outerCutOffDeg, bool attachToCamera)
 {
 	SLight sl;
 	sl.position = position;
@@ -153,6 +153,7 @@ bool LightingSystem::addSLight(glm::vec3 position, glm::vec3 direction, glm::vec
 	sl.quadratic = quadratic;
 	sl.cutOff = glm::cos(glm::radians(cutOffDeg));
 	sl.outerCutOff = glm::cos(glm::radians(outerCutOffDeg));
+	sl.attachedToCamera = attachToCamera;
 
 	sl.on = true;
 
@@ -259,10 +260,8 @@ Shader* LightingSystem::getShader()
 	vBuffer.append("#version 330 core\n");
 	vBuffer.append("layout(location = 0) in vec3 position;\n");
 	vBuffer.append("layout(location = 1) in vec3 normal;\n");
-	vBuffer.append("layout(location = 2) in vec2 texCoords;\n");
 	vBuffer.append("out vec3 Normal;\n");
 	vBuffer.append("out vec3 FragPos;\n");
-	vBuffer.append("out vec2 TexCoords;\n");
 	vBuffer.append("uniform mat4 model;\n");
 	vBuffer.append("uniform mat4 view;\n");
 	vBuffer.append("uniform mat4 projection;\n");
@@ -270,8 +269,7 @@ Shader* LightingSystem::getShader()
 	vBuffer.append("{\n");
 	vBuffer.append("	gl_Position = projection * view *  model * vec4(position, 1.0f);\n");
 	vBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
-	vBuffer.append("	Normal = mat3(transpose(inverse(model))) * normal;\n");
-	vBuffer.append("	TexCoords = texCoords;\n");
+	vBuffer.append("	Normal = mat3(transpose(inverse(model))) * normal;\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 	vBuffer.append("}\n");
 
 
@@ -282,8 +280,8 @@ Shader* LightingSystem::getShader()
 	fBuffer.append("#define N_SPOT_LIGHTS "); fBuffer.append(std::to_string(sLights.size())); fBuffer.append("\n");
 
 	fBuffer.append("struct Material {\n");
-	fBuffer.append("    sampler2D diffuse;\n");
-	fBuffer.append("    sampler2D specular;\n");
+	fBuffer.append("    vec3 diffuse;\n");
+	fBuffer.append("    vec3 specular;\n");
 	fBuffer.append("    float shininess;\n");
 	fBuffer.append("};\n");
 
@@ -319,14 +317,16 @@ Shader* LightingSystem::getShader()
 
 	fBuffer.append("in vec3 FragPos;\n");
 	fBuffer.append("in vec3 Normal;\n");
-	fBuffer.append("in vec2 TexCoords;\n");
 
 	fBuffer.append("out vec4 color;\n");
 
 	fBuffer.append("uniform vec3 viewPos;\n");
-	fBuffer.append("uniform DirLight dirLights[N_DIR_LIGHTS];\n");
-	fBuffer.append("uniform PointLight pointLights[N_POINT_LIGHTS];\n");
-	fBuffer.append("uniform SpotLight spotLights[N_SPOT_LIGHTS];\n");
+	if (dLights.size() > 0)
+		fBuffer.append("uniform DirLight dirLights[N_DIR_LIGHTS];\n");
+	if (pLights.size() > 0)
+		fBuffer.append("uniform PointLight pointLights[N_POINT_LIGHTS];\n");
+	if (sLights.size() > 0)
+		fBuffer.append("uniform SpotLight spotLights[N_SPOT_LIGHTS];\n");
 	fBuffer.append("uniform Material material;\n");
 	
 	fBuffer.append("vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);\n");
@@ -338,63 +338,81 @@ Shader* LightingSystem::getShader()
 	fBuffer.append("    vec3 norm = normalize(Normal);\n");
 	fBuffer.append("    vec3 viewDir = normalize(viewPos - FragPos);\n");
 	fBuffer.append("    vec3 result = vec3(0.f);\n");
-	fBuffer.append("    for(int i = 0; i < N_DIR_LIGHTS; i++)\n"); 
-	fBuffer.append("        result += CalcDirLight(dirLights[i], norm, viewDir);\n");
-	fBuffer.append("    for(int i = 0; i < N_POINT_LIGHTS; i++)\n");
-	fBuffer.append("        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);\n");
-	fBuffer.append("    for(int i = 0; i < N_SPOT_LIGHTS; i++)\n");
-	fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);\n");
+	if (dLights.size() > 0)
+	{
+		fBuffer.append("    for(int i = 0; i < N_DIR_LIGHTS; i++)\n");
+		fBuffer.append("        result += CalcDirLight(dirLights[i], norm, viewDir);\n");
+	}
+	if (pLights.size() > 0)
+	{
+		fBuffer.append("    for(int i = 0; i < N_POINT_LIGHTS; i++)\n");
+		fBuffer.append("        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);\n");
+	}
+	if (sLights.size() > 0)
+	{
+		fBuffer.append("    for(int i = 0; i < N_SPOT_LIGHTS; i++)\n");
+		fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);\n");
+	}
 	fBuffer.append("    color = vec4(result, 1.0);\n");
 	fBuffer.append("}\n");	
 
-	fBuffer.append("vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)\n");
-	fBuffer.append("{\n");
-	fBuffer.append("    vec3 lightDir = normalize(-light.direction);\n");
-	fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
-	fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
-	fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
-	fBuffer.append("    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n");
-	fBuffer.append("    return (ambient + diffuse + specular);\n");
-	fBuffer.append("}\n");
+	if (dLights.size() > 0)
+	{
+		fBuffer.append("vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)\n");
+		fBuffer.append("{\n");
+		fBuffer.append("    vec3 lightDir = normalize(-light.direction);\n");
+		fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
+		fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
+		fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
+		fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+		fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
+		fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
+		fBuffer.append("    return (ambient + diffuse + specular);\n");
+		fBuffer.append("}\n");
+	}
 
-	fBuffer.append("vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n");
-	fBuffer.append("{\n");
-	fBuffer.append("    vec3 lightDir = normalize(light.position - fragPos);\n");
-	fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
-	fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
-	fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
-	fBuffer.append("    float distance = length(light.position - fragPos);\n");
-	fBuffer.append("    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n");
-	fBuffer.append("    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n");
-	fBuffer.append("    ambient *= attenuation;\n");
-	fBuffer.append("    diffuse *= attenuation;\n");
-	fBuffer.append("    specular *= attenuation;\n");
-	fBuffer.append("    return (ambient + diffuse + specular);\n");
-	fBuffer.append("}\n");	
+	if (pLights.size() > 0)
+	{
+		fBuffer.append("vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n");
+		fBuffer.append("{\n");
+		fBuffer.append("    vec3 lightDir = normalize(light.position - fragPos);\n");
+		fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
+		fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
+		fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
+		fBuffer.append("    float distance = length(light.position - fragPos);\n");
+		fBuffer.append("    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n");
+		fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+		fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
+		fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
+		fBuffer.append("    ambient *= attenuation;\n");
+		fBuffer.append("    diffuse *= attenuation;\n");
+		fBuffer.append("    specular *= attenuation;\n");
+		fBuffer.append("    return (ambient + diffuse + specular);\n");
+		fBuffer.append("}\n");
+	}
 
-	fBuffer.append("vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n");
-	fBuffer.append("{\n");
-	fBuffer.append("    vec3 lightDir = normalize(light.position - fragPos);\n");
-	fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
-	fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
-	fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
-	fBuffer.append("    float distance = length(light.position - fragPos);\n");
-	fBuffer.append("    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n");
-	fBuffer.append("    float theta = dot(lightDir, normalize(-light.direction));\n");
-	fBuffer.append("    float epsilon = light.cutOff - light.outerCutOff;\n");
-	fBuffer.append("    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);\n");
-	fBuffer.append("    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));\n");
-	fBuffer.append("    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));\n");
-	fBuffer.append("    ambient *= attenuation * intensity;\n");
-	fBuffer.append("    diffuse *= attenuation * intensity;\n");
-	fBuffer.append("    specular *= attenuation * intensity;\n");
-	fBuffer.append("    return (ambient + diffuse + specular);\n");
-	fBuffer.append("}\n");
+	if (sLights.size() > 0)
+	{
+		fBuffer.append("vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)\n");
+		fBuffer.append("{\n");
+		fBuffer.append("    vec3 lightDir = normalize(light.position - fragPos);\n");
+		fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
+		fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
+		fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
+		fBuffer.append("    float distance = length(light.position - fragPos);\n");
+		fBuffer.append("    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n");
+		fBuffer.append("    float theta = dot(lightDir, normalize(-light.direction));\n");
+		fBuffer.append("    float epsilon = light.cutOff - light.outerCutOff;\n");
+		fBuffer.append("    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);\n");
+		fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+		fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
+		fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
+		fBuffer.append("    ambient *= attenuation * intensity;\n");
+		fBuffer.append("    diffuse *= attenuation * intensity;\n");
+		fBuffer.append("    specular *= attenuation * intensity;\n");
+		fBuffer.append("    return (ambient + diffuse + specular);\n");
+		fBuffer.append("}\n");
+	}
 
 	//std::cout << fBuffer << std::endl;
 
