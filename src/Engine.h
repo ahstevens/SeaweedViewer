@@ -12,7 +12,7 @@
 #include "GLFWInputBroadcaster.h"
 
 #include "Icosphere.h" // example
-#include "Model.h" // test
+#include "ObjModel.h" // test
 
 #define MS_PER_UPDATE 0.0333333333f
 #define CAST_RAY_LEN 1000.f
@@ -40,7 +40,7 @@ public:
 	GLint m_iViewPosLocLightingShader;
 
 	Icosphere* m_pSphere;
-	Model* m_pModel;
+	ObjModel* m_pModel;
 
 public:
 	Engine();

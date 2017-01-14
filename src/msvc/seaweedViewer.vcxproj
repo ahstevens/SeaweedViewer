@@ -131,7 +131,7 @@
     <ClInclude Include="..\GLFWInputBroadcaster.h" />
     <ClInclude Include="..\Icosphere.h" />
     <ClInclude Include="..\LightingSystem.h" />
-    <ClInclude Include="..\Model.h" />
+    <ClInclude Include="..\ObjModel.h" />
     <ClInclude Include="..\Object.h" />
     <ClInclude Include="..\Shader.h" />
   </ItemGroup>
@@ -141,7 +141,7 @@
     <ClCompile Include="..\Icosphere.cpp" />
     <ClCompile Include="..\LightingSystem.cpp" />
     <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\Model.cpp" />
+    <ClCompile Include="..\ObjModel.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

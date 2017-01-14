@@ -2,21 +2,21 @@
 
 #include <glm/glm.hpp>
 
-
 #include <tinyobjloader/tiny_obj_loader.h>
 
 #include "Shader.h"
 
-class Model
+class ObjModel
 {
 public:	
-	Model(std::string objFile);
-	~Model();
+	ObjModel(std::string objFile);
+	~ObjModel();
 	
 private:		
 	bool load(std::string objName);
 	
 	std::vector<glm::vec3> m_vvec3Vertices;
+	std::vector<glm::vec3> m_vvec3Normals;
 	std::vector<unsigned int> m_vuiIndices;
 	
 public:

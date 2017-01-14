@@ -39,7 +39,7 @@
     <ClInclude Include="..\Icosphere.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Model.h">
+    <ClInclude Include="..\ObjModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,7 +59,7 @@
     <ClCompile Include="..\Icosphere.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Model.cpp">
+    <ClCompile Include="..\ObjModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

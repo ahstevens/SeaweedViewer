@@ -2,11 +2,11 @@
 #define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #endif
 
-#include "Model.h"
+#include "ObjModel.h"
 #include <list>
 #include <glm/gtc/type_ptr.hpp>
 
-Model::Model(std::string objFile)
+ObjModel::ObjModel(std::string objFile)
 	: m_vec3DiffColor(glm::vec3(1.f))
 	, m_vec3SpecColor(glm::vec3(1.f))
 {
@@ -14,13 +14,13 @@ Model::Model(std::string objFile)
 	initGL();
 }
 
-Model::~Model(void)
+ObjModel::~ObjModel(void)
 {
 	m_vvec3Vertices.clear();
 	m_vuiIndices.clear();
 }
 
-bool Model::load(std::string objName)
+bool ObjModel::load(std::string objName)
 {	
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -38,6 +38,7 @@ bool Model::load(std::string objName)
 	}
 
 	// Loop over shapes
+	int index = 0;
 	for (size_t s = 0; s < shapes.size(); s++) 
 	{
 		// Loop over faces(polygon)
@@ -53,17 +54,24 @@ bool Model::load(std::string objName)
 				float vx = attrib.vertices[3 * idx.vertex_index + 0];
 				float vy = attrib.vertices[3 * idx.vertex_index + 1];
 				float vz = attrib.vertices[3 * idx.vertex_index + 2];
+
+				m_vvec3Vertices.push_back(glm::vec3(vx, vy, vz));
+
 				if (idx.normal_index >= 0)
 				{
 					float nx = attrib.normals[3 * idx.normal_index + 0];
 					float ny = attrib.normals[3 * idx.normal_index + 1];
 					float nz = attrib.normals[3 * idx.normal_index + 2];
+
+					m_vvec3Normals.push_back(glm::vec3(nx, ny, nz));
 				}
 				if (idx.texcoord_index >= 0)
 				{
 					float tx = attrib.texcoords[2 * idx.texcoord_index + 0];
 					float ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 				}
+
+				m_vuiIndices.push_back(index++);
 			}
 			index_offset += fv;
 
@@ -74,7 +82,7 @@ bool Model::load(std::string objName)
 	return true;
 }
 
-void Model::initGL()
+void ObjModel::initGL()
 {
 	// Create buffers/arrays
 	if (!this->m_glVAO) glGenVertexArrays(1, &this->m_glVAO);
@@ -113,7 +121,7 @@ void Model::initGL()
 	glBindVertexArray(0);
 }
 
-void Model::draw(Shader s)
+void ObjModel::draw(Shader s)
 {
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.diffuse"), m_vec3DiffColor.r, m_vec3DiffColor.g, m_vec3DiffColor.b);
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.specular"), m_vec3SpecColor.r, m_vec3SpecColor.g, m_vec3SpecColor.b);

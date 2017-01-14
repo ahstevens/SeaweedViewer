@@ -68,7 +68,7 @@ bool Engine::init()
 
 	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f));
 
-	m_pModel = new Model("../../src/teapot.obj");
+	m_pModel = new ObjModel("../../src/test.obj");
 
 	return true;
 }
@@ -156,6 +156,7 @@ void Engine::render()
 			else
 			{
 				m_pSphere->draw(*shader);
+				m_pModel->draw(*shader);
 			}
 		}
 	}
