@@ -199,16 +199,20 @@ void Engine::init_lighting()
 	GLFWInputBroadcaster::getInstance().attach(m_pLightingSystem);
 
 	// Directional light
-	m_pLightingSystem->addDLight(glm::vec3(-1.f), glm::vec3(0.1f), glm::vec3(1.f), glm::vec3(0.f));
+	m_pLightingSystem->addDirectLight(glm::vec3(-1.f)
+		, glm::vec3(0.1f)
+		, glm::vec3(1.f)
+		, glm::vec3(0.f)
+	);
 
 	// Positions of the point lights
-	//m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, 5.f));
-	//m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, -5.f));
-	//m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, 5.f));
-	//m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, -5.f));
+	m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, 5.f));
+	m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, -5.f));
+	m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, 5.f));
+	m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, -5.f));
 
 	// Spotlight
-	//m_pLightingSystem->addSLight();
+	//m_pLightingSystem->addSpotLight();
 }
 
 void Engine::init_camera()
@@ -271,7 +275,7 @@ void Engine::init_shaders()
 	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
 	vBuffer.append("	mat3 normalMatrix = mat3(transpose(inverse(view * model)));\n");
 	vBuffer.append("	vs_out.normal = normalize(vec3(projection * vec4(normalMatrix * normal, 1.0)));\n");
-	vBuffer.append("}\n");
+	vBuffer.append("}");
 
 	gBuffer.append("#version 330 core\n");
 	gBuffer.append("layout(triangles) in;\n");
@@ -293,14 +297,14 @@ void Engine::init_shaders()
 	gBuffer.append("	GenerateLine(0); // First vertex normal\n");
 	gBuffer.append("	GenerateLine(1); // Second vertex normal\n");
 	gBuffer.append("	GenerateLine(2); // Third vertex normal\n");
-	gBuffer.append("}\n");	
+	gBuffer.append("}");	
 		
 	fBuffer.append("#version 330 core\n");
 	fBuffer.append("out vec4 color;\n");
 	fBuffer.append("void main()\n");
 	fBuffer.append("{\n");
 	fBuffer.append("	color = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n");
-	fBuffer.append("}\n");
+	fBuffer.append("}");
 
 	m_pShaderNormals = new Shader(vBuffer.c_str(), fBuffer.c_str(), gBuffer.c_str());
 	//m_vpShaders.push_back(m_pShaderNormals);

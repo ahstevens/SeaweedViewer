@@ -48,13 +48,13 @@ public:
     // Uses the current shader
 	void setupLighting(Shader *s);
 
-	bool addDLight(glm::vec3 direction = glm::vec3(-1.0f)
+	bool addDirectLight(glm::vec3 direction = glm::vec3(-1.0f)
 		, glm::vec3 ambient = glm::vec3(0.2f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
 		, glm::vec3 specular = glm::vec3(1.f)
 		);
 
-	bool addPLight(glm::vec3 position = glm::vec3(1.0f)
+	bool addPointLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.05f)
 		, glm::vec3 diffuse = glm::vec3(0.8f)
 		, glm::vec3 specular = glm::vec3(1.0f)
@@ -63,7 +63,7 @@ public:
 		, GLfloat quadratic = 0.032f
 		);
 
-	bool addSLight(glm::vec3 position = glm::vec3(1.0f)
+	bool addSpotLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 direction = glm::vec3(0.0f)
 		, glm::vec3 ambient = glm::vec3(0.0f)
 		, glm::vec3 diffuse = glm::vec3(1.0f)

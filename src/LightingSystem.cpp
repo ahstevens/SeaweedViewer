@@ -110,7 +110,7 @@ void LightingSystem::setupLighting(Shader *s)
 	}
 }
 
-bool LightingSystem::addDLight(glm::vec3 direction,	glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
+bool LightingSystem::addDirectLight(glm::vec3 direction,	glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
 {
 	DLight dl;
 
@@ -128,7 +128,7 @@ bool LightingSystem::addDLight(glm::vec3 direction,	glm::vec3 ambient, glm::vec3
 	return true;
 }
 
-bool LightingSystem::addPLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic)
+bool LightingSystem::addPointLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic)
 {
 	PLight pl;
 	pl.position = position;
@@ -148,7 +148,7 @@ bool LightingSystem::addPLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 
 	return true;
 }
 
-bool LightingSystem::addSLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat cutOffDeg, GLfloat outerCutOffDeg, bool attachToCamera)
+bool LightingSystem::addSpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat cutOffDeg, GLfloat outerCutOffDeg, bool attachToCamera)
 {
 	SLight sl;
 	sl.position = position;

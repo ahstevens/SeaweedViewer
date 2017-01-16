@@ -1,5 +1,5 @@
 #ifndef TINYOBJLOADER_IMPLEMENTATION
-#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
+#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cpp
 #endif
 
 #include "ObjModel.h"
@@ -8,7 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 ObjModel::ObjModel(std::string objFile)
-	: m_vec3DiffColor(glm::vec3(0.2f, 0.8f, 0.1f))
+	: m_vec3DiffColor(glm::vec3(0.f, 1.f, 0.f))
 	, m_vec3SpecColor(glm::vec3(1.f))
 {
 	load(objFile);
