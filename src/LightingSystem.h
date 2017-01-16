@@ -46,10 +46,10 @@ public:
 	~LightingSystem();
 
     // Uses the current shader
-	void setupLighting(Shader s);
+	void setupLighting(Shader *s);
 
 	bool addDLight(glm::vec3 direction = glm::vec3(-1.0f)
-		, glm::vec3 ambient = glm::vec3(0.1f)
+		, glm::vec3 ambient = glm::vec3(0.2f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
 		, glm::vec3 specular = glm::vec3(1.f)
 		);

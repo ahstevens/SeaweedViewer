@@ -33,7 +33,7 @@ public:
 
 	Camera  *m_pCamera;
 	std::vector<Shader*> m_vpShaders;
-	Shader *m_pShaderLighting, *m_pShaderLamps;
+	Shader *m_pShaderLighting, *m_pShaderLamps, *m_pShaderNormals;
 
 	GLint m_iViewLocLightingShader;
 	GLint m_iProjLocLightingShader;

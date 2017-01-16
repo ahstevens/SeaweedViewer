@@ -12,6 +12,7 @@ Engine::Engine()
 	, m_pCamera(NULL)
 	, m_pShaderLighting(NULL)
 	, m_pShaderLamps(NULL)
+	, m_pShaderNormals(NULL)
 	, m_iViewLocLightingShader(-1)
 	, m_iProjLocLightingShader(-1)
 	, m_iViewPosLocLightingShader(-1)
@@ -126,7 +127,7 @@ void Engine::render()
 		}
 	}
 
-	m_pLightingSystem->setupLighting(*m_pShaderLighting);
+	m_pLightingSystem->setupLighting(m_pShaderLighting);
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
@@ -143,21 +144,18 @@ void Engine::render()
 
 	for (auto& shader : m_vpShaders)
 	{
-		if (shader->status())
-		{
-			shader->use();
-			glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		shader->use();
+		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-			if (shader == m_pShaderLamps)
-			{
-				m_pLightingSystem->draw(*shader);
-			}
-			else
-			{
-				m_pSphere->draw(*shader);
-				m_pModel->draw(*shader);
-			}
+		if (shader == m_pShaderLamps)
+		{
+			m_pLightingSystem->draw(*shader);
+		}
+		else
+		{
+			m_pSphere->draw(*shader);
+			m_pModel->draw(*shader);
 		}
 	}
 
@@ -201,13 +199,13 @@ void Engine::init_lighting()
 	GLFWInputBroadcaster::getInstance().attach(m_pLightingSystem);
 
 	// Directional light
-	m_pLightingSystem->addDLight(glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.1f), glm::vec3(0.5f), glm::vec3(1.f));
+	m_pLightingSystem->addDLight(glm::vec3(-1.f), glm::vec3(0.1f), glm::vec3(1.f), glm::vec3(0.f));
 
 	// Positions of the point lights
-	m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, 5.f));
-	m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, -5.f));
-	m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, 5.f));
-	m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, -5.f));
+	//m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, 5.f));
+	//m_pLightingSystem->addPLight(glm::vec3(5.f, 0.f, -5.f));
+	//m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, 5.f));
+	//m_pLightingSystem->addPLight(glm::vec3(-5.f, 0.f, -5.f));
 
 	// Spotlight
 	//m_pLightingSystem->addSLight();
@@ -223,8 +221,12 @@ void Engine::init_shaders()
 {
 	// Build and compile our shader program
 	m_pShaderLighting = m_pLightingSystem->getShader();
-	m_pShaderLighting->enable();
 	m_vpShaders.push_back(m_pShaderLighting);
+
+	// Get the uniform locations
+	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "view");
+	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "projection");
+	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
 
 	m_pShaderLamps = new Shader(
 		// Vertex shader
@@ -251,11 +253,55 @@ void Engine::init_shaders()
 		"	color = vec4(col.r, col.g, col.b, 1.0f); \n"
 		"}\n"
 		);
-	m_pShaderLamps->enable();
 	m_vpShaders.push_back(m_pShaderLamps);
 
-	// Get the uniform locations
-	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "view");
-	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "projection");
-	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
+	std::string vBuffer, fBuffer, gBuffer;
+
+	vBuffer.append("#version 330 core\n");
+	vBuffer.append("layout(location = 0) in vec3 position;\n");
+	vBuffer.append("layout(location = 1) in vec3 normal;\n");
+	vBuffer.append("out VS_OUT{\n");
+	vBuffer.append("	vec3 normal;\n");
+	vBuffer.append("} vs_out;\n");
+	vBuffer.append("uniform mat4 projection;\n");
+	vBuffer.append("uniform mat4 view;\n");
+	vBuffer.append("uniform mat4 model;\n");
+	vBuffer.append("void main()\n");
+	vBuffer.append("{\n");
+	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
+	vBuffer.append("	mat3 normalMatrix = mat3(transpose(inverse(view * model)));\n");
+	vBuffer.append("	vs_out.normal = normalize(vec3(projection * vec4(normalMatrix * normal, 1.0)));\n");
+	vBuffer.append("}\n");
+
+	gBuffer.append("#version 330 core\n");
+	gBuffer.append("layout(triangles) in;\n");
+	gBuffer.append("layout(line_strip, max_vertices = 6) out;\n");
+	gBuffer.append("in VS_OUT{\n");
+	gBuffer.append("	vec3 normal;\n");
+	gBuffer.append("} gs_in[];\n");
+	gBuffer.append("const float MAGNITUDE = 1.f;\n");
+	gBuffer.append("void GenerateLine(int index)\n");
+	gBuffer.append("{\n");
+	gBuffer.append("	gl_Position = gl_in[index].gl_Position;\n");
+	gBuffer.append("	EmitVertex();\n");
+	gBuffer.append("	gl_Position = gl_in[index].gl_Position + vec4(gs_in[index].normal, 0.0f) * MAGNITUDE;\n");
+	gBuffer.append("	EmitVertex();\n");
+	gBuffer.append("	EndPrimitive();\n");
+	gBuffer.append("}\n");
+	gBuffer.append("void main()\n");
+	gBuffer.append("{\n");
+	gBuffer.append("	GenerateLine(0); // First vertex normal\n");
+	gBuffer.append("	GenerateLine(1); // Second vertex normal\n");
+	gBuffer.append("	GenerateLine(2); // Third vertex normal\n");
+	gBuffer.append("}\n");	
+		
+	fBuffer.append("#version 330 core\n");
+	fBuffer.append("out vec4 color;\n");
+	fBuffer.append("void main()\n");
+	fBuffer.append("{\n");
+	fBuffer.append("	color = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n");
+	fBuffer.append("}\n");
+
+	m_pShaderNormals = new Shader(vBuffer.c_str(), fBuffer.c_str(), gBuffer.c_str());
+	//m_vpShaders.push_back(m_pShaderNormals);
 }

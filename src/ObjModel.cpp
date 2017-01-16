@@ -4,10 +4,11 @@
 
 #include "ObjModel.h"
 #include <list>
+#include <map>
 #include <glm/gtc/type_ptr.hpp>
 
 ObjModel::ObjModel(std::string objFile)
-	: m_vec3DiffColor(glm::vec3(1.f))
+	: m_vec3DiffColor(glm::vec3(0.2f, 0.8f, 0.1f))
 	, m_vec3SpecColor(glm::vec3(1.f))
 {
 	load(objFile);
@@ -26,6 +27,8 @@ bool ObjModel::load(std::string objName)
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 
+	std::map<int, std::vector<glm::vec3>> vertNorms;
+
 	std::string err;
 	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, objName.c_str());
 
@@ -39,40 +42,49 @@ bool ObjModel::load(std::string objName)
 
 	// Loop over shapes
 	int index = 0;
-	for (size_t s = 0; s < shapes.size(); s++) 
+	for (size_t s = 0; s < shapes.size(); s++)
 	{
+		for (int i = 0; i < attrib.vertices.size(); i += 3)
+		{
+			m_vvec3Vertices.push_back(glm::vec3(attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]));
+			m_vvec3Normals.push_back(glm::vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
+		}
+
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) 
 		{
 			int fv = shapes[s].mesh.num_face_vertices[f];
 
-			// Loop over vertices in the face.
-			for (size_t v = 0; v < fv; v++) {
-				// access to vertex
-				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-				float vx = attrib.vertices[3 * idx.vertex_index + 0];
-				float vy = attrib.vertices[3 * idx.vertex_index + 1];
-				float vz = attrib.vertices[3 * idx.vertex_index + 2];
+			// access to vertex
+			tinyobj::index_t idxA = shapes[s].mesh.indices[index_offset + 0];
+			tinyobj::index_t idxB = shapes[s].mesh.indices[index_offset + 1];
+			tinyobj::index_t idxC = shapes[s].mesh.indices[index_offset + 2];
 
-				m_vvec3Vertices.push_back(glm::vec3(vx, vy, vz));
+			glm::vec3 a, b, c;
+				
+			a.x = attrib.vertices[3 * idxA.vertex_index + 0];
+			a.y = attrib.vertices[3 * idxA.vertex_index + 1];
+			a.b = attrib.vertices[3 * idxA.vertex_index + 2];
 
-				if (idx.normal_index >= 0)
-				{
-					float nx = attrib.normals[3 * idx.normal_index + 0];
-					float ny = attrib.normals[3 * idx.normal_index + 1];
-					float nz = attrib.normals[3 * idx.normal_index + 2];
+			b.x = attrib.vertices[3 * idxB.vertex_index + 0];
+			b.y = attrib.vertices[3 * idxB.vertex_index + 1];
+			b.b = attrib.vertices[3 * idxB.vertex_index + 2];
 
-					m_vvec3Normals.push_back(glm::vec3(nx, ny, nz));
-				}
-				if (idx.texcoord_index >= 0)
-				{
-					float tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-					float ty = attrib.texcoords[2 * idx.texcoord_index + 1];
-				}
+			c.x = attrib.vertices[3 * idxC.vertex_index + 0];
+			c.y = attrib.vertices[3 * idxC.vertex_index + 1];
+			c.b = attrib.vertices[3 * idxC.vertex_index + 2];
 
-				m_vuiIndices.push_back(index++);
-			}
+			glm::vec3 norm(glm::cross(b - a, c - a));
+
+			vertNorms[idxA.vertex_index].push_back(norm);
+			vertNorms[idxB.vertex_index].push_back(norm);
+			vertNorms[idxC.vertex_index].push_back(norm);
+
+			m_vuiIndices.push_back(idxA.vertex_index);
+			m_vuiIndices.push_back(idxB.vertex_index);
+			m_vuiIndices.push_back(idxC.vertex_index);
+
 			index_offset += fv;
 
 			// per-face material
@@ -80,6 +92,16 @@ bool ObjModel::load(std::string objName)
 		}
 	}
 	return true;
+
+	for (int i = 0; i < vertNorms.size(); ++i)
+	{
+		glm::vec3 norm(0.f);
+
+		for (int j = 0; j < vertNorms[i].size(); ++j)
+			norm += vertNorms[i][j];
+
+		m_vvec3Normals[i] = glm::normalize(norm);
+	}
 }
 
 void ObjModel::initGL()
@@ -91,11 +113,11 @@ void ObjModel::initGL()
 
 	std::vector<Vertex> buffer;
 
-	for (auto const &v : m_vvec3Vertices)
+	for (int i = 0; i < m_vvec3Vertices.size(); ++i)
 	{
 		Vertex temp;
-		temp.pos = v;
-		temp.norm = v;
+		temp.pos = m_vvec3Vertices[i];
+		temp.norm = m_vvec3Normals[i];
 		buffer.push_back(temp);
 	}
 
@@ -125,7 +147,7 @@ void ObjModel::draw(Shader s)
 {
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.diffuse"), m_vec3DiffColor.r, m_vec3DiffColor.g, m_vec3DiffColor.b);
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.specular"), m_vec3SpecColor.r, m_vec3SpecColor.g, m_vec3SpecColor.b);
-	glUniform1f(glGetUniformLocation(s.m_nProgram, "material.shininess"), 32.0f);
+	glUniform1f(glGetUniformLocation(s.m_nProgram, "material.shininess"), 32.f);
 
 	glUniformMatrix4fv(glGetUniformLocation(s.m_nProgram, "model"), 1, GL_FALSE, glm::value_ptr(m_mat4Model));
 	

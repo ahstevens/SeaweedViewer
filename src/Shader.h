@@ -20,7 +20,6 @@ public:
     // Constructor generates the shader on the fly from a file
     Shader(const GLchar* vertexData, const GLchar* fragmentData, const GLchar* geometryData = nullptr, bool dataAreFilepaths = false)
 		: m_nProgram(0)
-		, m_bEnabled(false)
     {
 		std::string vertexCode;
 		std::string fragmentCode;
@@ -80,14 +79,6 @@ public:
 
     // Turn off shaders
     static void off() { glUseProgram(0); }
-
-	void enable() { m_bEnabled = true; }
-	void disable() { m_bEnabled = false; }
-	void toggle() { m_bEnabled = !m_bEnabled; }
-	bool status() { return m_bEnabled; }
-
-private:
-	bool m_bEnabled;
 
 private:
 	void compileGLShader(const GLchar* vShaderCode, const GLchar* fShaderCode, const GLchar* gShaderCode = nullptr)

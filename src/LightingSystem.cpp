@@ -27,8 +27,16 @@ LightingSystem::~LightingSystem()
 }
 
 // Uses the current shader
-void LightingSystem::setupLighting(Shader s)
+void LightingSystem::setupLighting(Shader *s)
 {
+	if (m_bRefreshShader)
+	{
+		if (s)
+			delete s;
+		s = getShader();
+		m_bRefreshShader = false;
+	}
+
 	// Directional light
 	for (int i = 0; i < dLights.size(); ++i)
 	{
@@ -37,16 +45,16 @@ void LightingSystem::setupLighting(Shader s)
 
 		if (dLights[i].on)
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".direction").c_str()), dLights[i].direction.x, dLights[i].direction.y, dLights[i].direction.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), dLights[i].ambient.x, dLights[i].ambient.y, dLights[i].ambient.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), dLights[i].diffuse.x, dLights[i].diffuse.y, dLights[i].diffuse.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), dLights[i].specular.x, dLights[i].specular.y, dLights[i].specular.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".direction").c_str()), dLights[i].direction.x, dLights[i].direction.y, dLights[i].direction.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), dLights[i].ambient.x, dLights[i].ambient.y, dLights[i].ambient.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), dLights[i].diffuse.x, dLights[i].diffuse.y, dLights[i].diffuse.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), dLights[i].specular.x, dLights[i].specular.y, dLights[i].specular.z);
 		}
 		else
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
 		}
 	}
 
@@ -58,19 +66,19 @@ void LightingSystem::setupLighting(Shader s)
 
 		if (pLights[i].on)
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".position").c_str()), pLights[i].position.x, pLights[i].position.y, pLights[i].position.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), pLights[i].ambient.r, pLights[i].ambient.g, pLights[i].ambient.b);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), pLights[i].diffuse.r, pLights[i].diffuse.g, pLights[i].diffuse.b);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), pLights[i].specular.r, pLights[i].specular.g, pLights[i].specular.b);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".constant").c_str()), pLights[i].constant);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".linear").c_str()), pLights[i].linear);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".quadratic").c_str()), pLights[i].quadratic);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".position").c_str()), pLights[i].position.x, pLights[i].position.y, pLights[i].position.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), pLights[i].ambient.r, pLights[i].ambient.g, pLights[i].ambient.b);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), pLights[i].diffuse.r, pLights[i].diffuse.g, pLights[i].diffuse.b);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), pLights[i].specular.r, pLights[i].specular.g, pLights[i].specular.b);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".constant").c_str()), pLights[i].constant);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".linear").c_str()), pLights[i].linear);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".quadratic").c_str()), pLights[i].quadratic);
 		}
 		else
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
 		}
 	}
 
@@ -82,22 +90,22 @@ void LightingSystem::setupLighting(Shader s)
 
 		if (sLights[i].on)
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".position").c_str()), sLights[i].position.x, sLights[i].position.y, sLights[i].position.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".direction").c_str()), sLights[i].direction.x, sLights[i].direction.y, sLights[i].direction.z);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), sLights[i].ambient.r, sLights[i].ambient.g, sLights[i].ambient.b);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), sLights[i].diffuse.r, sLights[i].diffuse.g, sLights[i].diffuse.b);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), sLights[i].specular.r, sLights[i].specular.g, sLights[i].specular.b);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".constant").c_str()), sLights[i].constant);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".linear").c_str()), sLights[i].linear);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".quadratic").c_str()), sLights[i].quadratic);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".cutOff").c_str()), sLights[i].cutOff);
-			glUniform1f(glGetUniformLocation(s.m_nProgram, (name + ".outerCutOff").c_str()), sLights[i].outerCutOff);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".position").c_str()), sLights[i].position.x, sLights[i].position.y, sLights[i].position.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".direction").c_str()), sLights[i].direction.x, sLights[i].direction.y, sLights[i].direction.z);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), sLights[i].ambient.r, sLights[i].ambient.g, sLights[i].ambient.b);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), sLights[i].diffuse.r, sLights[i].diffuse.g, sLights[i].diffuse.b);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), sLights[i].specular.r, sLights[i].specular.g, sLights[i].specular.b);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".constant").c_str()), sLights[i].constant);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".linear").c_str()), sLights[i].linear);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".quadratic").c_str()), sLights[i].quadratic);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".cutOff").c_str()), sLights[i].cutOff);
+			glUniform1f(glGetUniformLocation(s->m_nProgram, (name + ".outerCutOff").c_str()), sLights[i].outerCutOff);
 		}
 		else
 		{
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
-			glUniform3f(glGetUniformLocation(s.m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), 0.f, 0.f, 0.f);
+			glUniform3f(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), 0.f, 0.f, 0.f);
 		}
 	}
 }
@@ -335,8 +343,10 @@ Shader* LightingSystem::getShader()
 
 	fBuffer.append("void main()\n");
 	fBuffer.append("{\n");
-	fBuffer.append("    vec3 norm = normalize(Normal);\n");
 	fBuffer.append("    vec3 viewDir = normalize(viewPos - FragPos);\n");
+	fBuffer.append("    vec3 norm = normalize(Normal);\n");
+	fBuffer.append("    if(!gl_FrontFacing)\n");
+	fBuffer.append("		norm = -norm;\n");
 	fBuffer.append("    vec3 result = vec3(0.f);\n");
 	if (dLights.size() > 0)
 	{
@@ -354,6 +364,8 @@ Shader* LightingSystem::getShader()
 		fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);\n");
 	}
 	fBuffer.append("    color = vec4(result, 1.0);\n");
+	//fBuffer.append("    if(!gl_FrontFacing)\n");
+	//fBuffer.append("		color.x = 1.f - color.x;\n");
 	fBuffer.append("}\n");	
 
 	if (dLights.size() > 0)
