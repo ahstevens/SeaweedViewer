@@ -104,18 +104,6 @@ void Engine::mainLoop()
 void Engine::update(float dt)
 {
 	m_pCamera->update(dt);
-}
-
-void Engine::render()
-{
-	// OpenGL options
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_MULTISAMPLE);
-	glLineWidth(5.f);
-
-	// Background Fill Color
-	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
@@ -131,27 +119,33 @@ void Engine::render()
 		shader->use();
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		
+		if (shader == m_pShaderLighting)
+			m_pLightingSystem->update(view, shader);
+	}
+
+	Shader::off();
+}
+
+void Engine::render()
+{
+	// OpenGL options
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_MULTISAMPLE);
+	glLineWidth(5.f);
+
+	// Background Fill Color
+	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	for (auto& shader : m_vpShaders)
+	{
+		shader->use();
 
 		if (shader == m_pShaderLamps)
 		{
 			m_pLightingSystem->draw(*shader);
 			continue;
-		}
-
-		if (shader == m_pShaderLighting)
-		{
-			// update position of attached spotlight(s)
-			for (auto &sl : m_pLightingSystem->sLights)
-			{
-				if (sl.attachedToCamera)
-				{
-					sl.position = m_pCamera->getPosition();
-					sl.direction = glm::vec3(m_pCamera->getOrientation()[2]);
-				}
-			}
-
-			glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
-			m_pLightingSystem->update(m_pShaderLighting);
 		}
 
 		m_pSphere->draw(*shader);

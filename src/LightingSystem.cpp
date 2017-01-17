@@ -27,7 +27,7 @@ LightingSystem::~LightingSystem()
 }
 
 // Uses the current shader
-void LightingSystem::update(Shader *s)
+void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
 {
 	if (m_bRefreshShader)
 	{
@@ -36,6 +36,9 @@ void LightingSystem::update(Shader *s)
 		s = getShader();
 		m_bRefreshShader = false;
 	}
+
+	glm::vec3 camPos(cameraTransform[3].x, cameraTransform[3].y, cameraTransform[3].z);
+	glm::vec3 camFwd(cameraTransform[2].x, cameraTransform[2].y, cameraTransform[2].z);
 
 	// Directional light
 	for (int i = 0; i < dLights.size(); ++i)
@@ -87,6 +90,12 @@ void LightingSystem::update(Shader *s)
 	{
 		std::string name = "spotLights[" + std::to_string(i);
 		name += "]";
+
+		if (sLights[i].attachedToCamera)
+		{
+			sLights[i].position = camPos;
+			sLights[i].direction = camFwd;
+		}
 
 		if (sLights[i].on)
 		{
