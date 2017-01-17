@@ -34,9 +34,9 @@ void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
 		if (s)
 			delete s;
 		s = getShader();
-		s->use();
-		m_bRefreshShader = false;
 	}
+	
+	s->use();
 
 	glm::vec3 black(0.f);
 
@@ -440,7 +440,9 @@ Shader* LightingSystem::getShader()
 		fBuffer.append("}\n");
 	}
 
-	//std::cout << fBuffer << std::endl;
+	std::cout << fBuffer << std::endl;
+
+	m_bRefreshShader = false;
 
 	return new Shader(vBuffer.c_str(), fBuffer.c_str());
 }
