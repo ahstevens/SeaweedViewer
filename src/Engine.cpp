@@ -110,26 +110,12 @@ void Engine::render()
 {
 	// OpenGL options
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_MULTISAMPLE);
 	glLineWidth(5.f);
 
 	// Background Fill Color
 	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Use corresponding shader when setting uniforms/drawing objects
-	m_pShaderLighting->use();
-	glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
-
-	for (auto &sl : m_pLightingSystem->sLights)
-	{
-		if (sl.attachedToCamera)
-		{
-			sl.position = m_pCamera->getPosition();
-			sl.direction = glm::vec3(m_pCamera->getOrientation()[2]);
-		}
-	}
-
-	m_pLightingSystem->update(m_pShaderLighting);
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
@@ -149,13 +135,28 @@ void Engine::render()
 		if (shader == m_pShaderLamps)
 		{
 			m_pLightingSystem->draw(*shader);
+			continue;
 		}
-		else
+
+		if (shader == m_pShaderLighting)
 		{
-			m_pSphere->draw(*shader);
-			for (auto const &m : m_vpModels)
-				m->draw(*shader);
+			// update position of attached spotlight(s)
+			for (auto &sl : m_pLightingSystem->sLights)
+			{
+				if (sl.attachedToCamera)
+				{
+					sl.position = m_pCamera->getPosition();
+					sl.direction = glm::vec3(m_pCamera->getOrientation()[2]);
+				}
+			}
+
+			glUniform3f(m_iViewPosLocLightingShader, m_pCamera->getPosition().x, m_pCamera->getPosition().y, m_pCamera->getPosition().z);
+			m_pLightingSystem->update(m_pShaderLighting);
 		}
+
+		m_pSphere->draw(*shader);
+		for (auto const &m : m_vpModels)
+			m->draw(*shader);
 	}
 
 	Shader::off();
@@ -168,6 +169,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* mWindow = glfwCreateWindow(m_iWidth, m_iHeight, winName.c_str(), nullptr, nullptr);
 
 	// Check for Valid Context
