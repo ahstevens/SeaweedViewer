@@ -140,10 +140,6 @@ void Engine::render()
 		1000.0f
 		);
 
-	// Pass the matrices to the shader
-	glUniformMatrix4fv(m_iViewLocLightingShader, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(m_iProjLocLightingShader, 1, GL_FALSE, glm::value_ptr(projection));
-
 	for (auto& shader : m_vpShaders)
 	{
 		shader->use();
