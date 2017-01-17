@@ -37,8 +37,6 @@ public:
 	std::vector<Shader*> m_vpShaders;
 	Shader *m_pShaderLighting, *m_pShaderLamps, *m_pShaderNormals;
 
-	GLint m_iViewPosLocLightingShader;
-
 	Icosphere* m_pSphere;
 	std::vector<ObjModel*> m_vpModels;
 

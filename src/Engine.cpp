@@ -13,7 +13,6 @@ Engine::Engine(int argc, char* argv[])
 	, m_pShaderLighting(NULL)
 	, m_pShaderLamps(NULL)
 	, m_pShaderNormals(NULL)
-	, m_iViewPosLocLightingShader(-1)
 	, m_pSphere(NULL)
 {
 	for (int i = 0; i < argc; ++i)
@@ -68,7 +67,7 @@ bool Engine::init()
 	init_camera();
 	init_shaders();
 
-	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f));
+	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(1.f));
 
 	for (int i = 1; i < m_vstrArgs.size(); ++i)
 		m_vpModels.push_back(new ObjModel(m_vstrArgs[i]));
@@ -90,7 +89,7 @@ void Engine::mainLoop()
 		// Poll input events first
 		GLFWInputBroadcaster::getInstance().poll();
 
-		update(m_fStepSize);
+		update(m_fDeltaTime);
 
 		render();
 
@@ -105,6 +104,12 @@ void Engine::update(float dt)
 {
 	m_pCamera->update(dt);
 
+	for (auto &pl : m_pLightingSystem->pLights)
+	{
+		float step = 180.f * dt;
+		pl.position = glm::vec3(glm::rotate(glm::mat4(), glm::radians(step), glm::vec3(0.f, 1.f, 0.f)) * glm::vec4(pl.position, 1.f));
+	}
+
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
 	glm::mat4 projection = glm::perspective(
@@ -114,7 +119,7 @@ void Engine::update(float dt)
 		1000.0f
 		);
 
-	for (auto& shader : m_vpShaders)
+	for (auto const &shader : m_vpShaders)
 	{
 		shader->use();
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -197,7 +202,7 @@ void Engine::init_lighting()
 	m_pLightingSystem->addDirectLight(glm::vec3(-1.f)
 		, glm::vec3(0.1f)
 		, glm::vec3(1.f)
-		, glm::vec3(0.f)
+		, glm::vec3(1.f)
 	);
 
 	// Positions of the point lights
@@ -223,9 +228,6 @@ void Engine::init_shaders()
 	// Build and compile our shader program
 	m_pShaderLighting = m_pLightingSystem->getShader();
 	m_vpShaders.push_back(m_pShaderLighting);
-
-	// Get the uniform locations
-	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
 
 	vBuffer.append("#version 330 core\n");
 	vBuffer.append("layout(location = 0) in vec3 position;\n");
