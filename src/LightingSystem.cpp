@@ -27,7 +27,7 @@ LightingSystem::~LightingSystem()
 }
 
 // Uses the current shader
-void LightingSystem::setupLighting(Shader *s)
+void LightingSystem::update(Shader *s)
 {
 	if (m_bRefreshShader)
 	{

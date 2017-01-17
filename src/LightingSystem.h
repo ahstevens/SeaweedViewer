@@ -46,7 +46,7 @@ public:
 	~LightingSystem();
 
     // Uses the current shader
-	void setupLighting(Shader *s);
+	void update(Shader *s);
 
 	bool addDirectLight(glm::vec3 direction = glm::vec3(-1.0f)
 		, glm::vec3 ambient = glm::vec3(0.2f)

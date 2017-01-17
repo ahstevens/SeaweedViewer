@@ -4,7 +4,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-Engine::Engine()
+Engine::Engine(int argc, char* argv[])
 	: m_pWindow(NULL)
 	, m_pLightingSystem(NULL)
 	, m_fDeltaTime(0.f)
@@ -13,12 +13,11 @@ Engine::Engine()
 	, m_pShaderLighting(NULL)
 	, m_pShaderLamps(NULL)
 	, m_pShaderNormals(NULL)
-	, m_iViewLocLightingShader(-1)
-	, m_iProjLocLightingShader(-1)
 	, m_iViewPosLocLightingShader(-1)
 	, m_pSphere(NULL)
-	, m_pModel(NULL)
 {
+	for (int i = 0; i < argc; ++i)
+		m_vstrArgs.push_back(std::string(argv[i]));
 }
 
 Engine::~Engine()
@@ -27,13 +26,15 @@ Engine::~Engine()
 
 void Engine::receiveEvent(Object * obj, const int event, void * data)
 {
-	if (event == BroadcastSystem::EVENT::KEY_PRESS)
+	if (event == BroadcastSystem::EVENT::KEY_PRESS || event == BroadcastSystem::EVENT::KEY_REPEAT)
 	{
 		int key;
 		memcpy(&key, data, sizeof(key));
 
-		if (key == GLFW_KEY_L)
-			true;
+		if (key == GLFW_KEY_RIGHT)
+			m_mat4WorldRotation = glm::rotate(m_mat4WorldRotation, glm::radians(1.f), glm::vec3(0.f, 1.f, 0.f));
+		if (key == GLFW_KEY_LEFT)
+			m_mat4WorldRotation = glm::rotate(m_mat4WorldRotation, glm::radians(-1.f), glm::vec3(0.f, 1.f, 0.f));
 	}
 
 	if (event == BroadcastSystem::EVENT::MOUSE_UNCLICK)
@@ -69,7 +70,8 @@ bool Engine::init()
 
 	m_pSphere = new Icosphere(4, glm::vec3(0.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f));
 
-	m_pModel = new ObjModel("../../src/test.obj");
+	for (int i = 1; i < m_vstrArgs.size(); ++i)
+		m_vpModels.push_back(new ObjModel(m_vstrArgs[i]));
 
 	return true;
 }
@@ -127,14 +129,14 @@ void Engine::render()
 		}
 	}
 
-	m_pLightingSystem->setupLighting(m_pShaderLighting);
+	m_pLightingSystem->update(m_pShaderLighting);
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
 	glm::mat4 projection = glm::perspective(
 		glm::radians(m_pCamera->getZoom()),
 		static_cast<float>(m_iWidth) / static_cast<float>(m_iHeight),
-		0.01f,
+		0.1f,
 		1000.0f
 		);
 
@@ -155,7 +157,8 @@ void Engine::render()
 		else
 		{
 			m_pSphere->draw(*shader);
-			m_pModel->draw(*shader);
+			for (auto const &m : m_vpModels)
+				m->draw(*shader);
 		}
 	}
 
@@ -223,43 +226,39 @@ void Engine::init_camera()
 
 void Engine::init_shaders()
 {
+	std::string vBuffer, fBuffer, gBuffer;
+
 	// Build and compile our shader program
 	m_pShaderLighting = m_pLightingSystem->getShader();
 	m_vpShaders.push_back(m_pShaderLighting);
 
 	// Get the uniform locations
-	m_iViewLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "view");
-	m_iProjLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "projection");
 	m_iViewPosLocLightingShader = glGetUniformLocation(m_pShaderLighting->m_nProgram, "viewPos");
 
-	m_pShaderLamps = new Shader(
-		// Vertex shader
-		"#version 330 core\n"
-		"layout(location = 0) in vec3 position;\n"
+	vBuffer.append("#version 330 core\n");
+	vBuffer.append("layout(location = 0) in vec3 position;\n");
+	vBuffer.append("uniform mat4 model;\n");
+	vBuffer.append("uniform mat4 view;\n");
+	vBuffer.append("uniform mat4 projection;\n");
+	vBuffer.append("void main()\n");
+	vBuffer.append("{\n");
+	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
+	vBuffer.append("}\n");
 
-		"uniform mat4 model;\n"
-		"uniform mat4 view;\n"
-		"uniform mat4 projection;\n"
+	fBuffer.append("#version 330 core\n");
+	fBuffer.append("out vec4 color;\n");
+	fBuffer.append("uniform vec3 col;\n");
+	fBuffer.append("void main()\n");
+	fBuffer.append("{\n");
+	fBuffer.append("	color = vec4(col.r, col.g, col.b, 1.0f);\n");
+	fBuffer.append("}\n");
 
-		"void main()\n"
-		"{\n"
-		"	gl_Position = projection * view * model * vec4(position, 1.0f);\n"
-		"}\n",
-
-		// Fragment shader
-		"#version 330 core\n"
-		"out vec4 color;\n"
-
-		"uniform vec3 col;\n"
-
-		"void main()\n"
-		"{\n"
-		"	color = vec4(col.r, col.g, col.b, 1.0f); \n"
-		"}\n"
-		);
+	m_pShaderLamps = new Shader(vBuffer.c_str(), fBuffer.c_str());
 	m_vpShaders.push_back(m_pShaderLamps);
 
-	std::string vBuffer, fBuffer, gBuffer;
+	vBuffer.clear();
+	fBuffer.clear();
+	gBuffer.clear();
 
 	vBuffer.append("#version 330 core\n");
 	vBuffer.append("layout(location = 0) in vec3 position;\n");

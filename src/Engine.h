@@ -20,6 +20,8 @@
 class Engine : public BroadcastSystem::Listener
 {
 public:
+	std::vector<std::string> m_vstrArgs;
+
 	GLFWwindow* m_pWindow;
 	LightingSystem* m_pLightingSystem;
 
@@ -35,15 +37,16 @@ public:
 	std::vector<Shader*> m_vpShaders;
 	Shader *m_pShaderLighting, *m_pShaderLamps, *m_pShaderNormals;
 
-	GLint m_iViewLocLightingShader;
-	GLint m_iProjLocLightingShader;
 	GLint m_iViewPosLocLightingShader;
 
 	Icosphere* m_pSphere;
-	ObjModel* m_pModel;
+	std::vector<ObjModel*> m_vpModels;
+
+private:
+	glm::mat4 m_mat4WorldRotation;
 
 public:
-	Engine();
+	Engine(int argc, char* argv[]);
 	~Engine();
 
 	bool init();

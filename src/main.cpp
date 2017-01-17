@@ -4,7 +4,7 @@
 int main(int argc, char * argv[]) 
 {
 	// Instantiate an engine to drive the application
-	Engine *engine = new Engine();
+	Engine *engine = new Engine(argc, argv);
 
 	// Initialize the engine
 	if(!engine->init())
