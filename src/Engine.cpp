@@ -119,9 +119,10 @@ void Engine::update(float dt)
 		1000.0f
 		);
 
-	for (auto const &shader : m_vpShaders)
+	for (auto &shader : m_vpShaders)
 	{
 		shader->use();
+
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		
@@ -137,12 +138,11 @@ void Engine::render()
 	// OpenGL options
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
-	glLineWidth(5.f);
 
 	// Background Fill Color
 	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+
 	for (auto& shader : m_vpShaders)
 	{
 		shader->use();
@@ -170,7 +170,6 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* mWindow = glfwCreateWindow(m_iWidth, m_iHeight, winName.c_str(), nullptr, nullptr);
-
 	// Check for Valid Context
 	if (mWindow == nullptr)
 		return nullptr;
@@ -185,6 +184,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glewExperimental = GL_TRUE;
 	glewInit();
 	fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
+	GLenum err = glGetError(); // clear GL_INVALID_ENUM error from glewInit
 
 	// Define the viewport dimensions
 	glViewport(0, 0, m_iWidth, m_iHeight);
