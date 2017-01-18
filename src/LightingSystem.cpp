@@ -40,9 +40,12 @@ void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
 
 	glm::vec3 black(0.f);
 
-	glm::vec3 camPos(cameraTransform[3].x, cameraTransform[3].y, cameraTransform[3].z);
-	glm::vec3 camFwd(cameraTransform[2].x, cameraTransform[2].y, cameraTransform[2].z);
+	glm::mat4 invCamMat = glm::inverse(cameraTransform);
+	glm::vec3 camPos(invCamMat[3].x, invCamMat[3].y, invCamMat[3].z);
+	glm::vec3 camFwd(invCamMat[2].x, invCamMat[2].y, invCamMat[2].z);
 	
+	glUniform3fv(glGetUniformLocation(s->m_nProgram, "viewPos"), 1, glm::value_ptr(camPos));
+
 	// Directional light
 	for (int i = 0; i < dLights.size(); ++i)
 	{
@@ -51,7 +54,7 @@ void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
 
 		if (dLights[i].on)
 		{
-			glUniform3fv(glGetUniformLocation(s->m_nProgram, (name + ".direction").c_str()), 1, glm::value_ptr(dLights[i].direction));
+			glUniform3fv(glGetUniformLocation(s->m_nProgram, (name + ".position").c_str()), 1, glm::value_ptr(dLights[i].position));
 			glUniform3fv(glGetUniformLocation(s->m_nProgram, (name + ".ambient").c_str()), 1, glm::value_ptr(dLights[i].ambient));
 			glUniform3fv(glGetUniformLocation(s->m_nProgram, (name + ".diffuse").c_str()), 1, glm::value_ptr(dLights[i].diffuse));
 			glUniform3fv(glGetUniformLocation(s->m_nProgram, (name + ".specular").c_str()), 1, glm::value_ptr(dLights[i].specular));
@@ -122,11 +125,11 @@ void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
 	}
 }
 
-bool LightingSystem::addDirectLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
+bool LightingSystem::addDirectLight(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular)
 {
 	DLight dl;
 
-	dl.direction = direction;
+	dl.position = position;
 	dl.ambient = ambient;
 	dl.diffuse = diffuse;
 	dl.specular = specular;
@@ -283,14 +286,12 @@ Shader* LightingSystem::getShader()
 		vBuffer.append("layout(location = 1) in vec3 normal;\n");
 		vBuffer.append("out vec3 Normal;\n");
 		vBuffer.append("out vec3 FragPos;\n");
-		vBuffer.append("out vec3 ViewPos;\n");
 		vBuffer.append("uniform mat4 model;\n");
 		vBuffer.append("uniform mat4 view;\n");
 		vBuffer.append("uniform mat4 projection;\n");
 		vBuffer.append("void main()\n");
 		vBuffer.append("{\n");
 		vBuffer.append("	gl_Position = projection * view *  model * vec4(position, 1.0f);\n");
-		vBuffer.append("	ViewPos = vec3(view[3].x, view[3].y, view[3].z);\n");
 		vBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
 		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vBuffer.append("}\n");
@@ -311,7 +312,7 @@ Shader* LightingSystem::getShader()
 		{
 			fBuffer.append("#define N_DIR_LIGHTS "); fBuffer.append(std::to_string(dLights.size())); fBuffer.append("\n");
 			fBuffer.append("struct DirLight {\n");
-			fBuffer.append("    vec3 direction;\n");
+			fBuffer.append("    vec3 position;\n");
 			fBuffer.append("    vec3 ambient;\n");
 			fBuffer.append("    vec3 diffuse;\n");
 			fBuffer.append("    vec3 specular;\n");
@@ -319,7 +320,7 @@ Shader* LightingSystem::getShader()
 			fBuffer.append("uniform DirLight dirLights[N_DIR_LIGHTS];\n");
 			fBuffer.append("vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)\n");
 			fBuffer.append("{\n");
-			fBuffer.append("    vec3 lightDir = normalize(-light.direction);\n");
+			fBuffer.append("    vec3 lightDir = normalize(light.position);\n");
 			fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
 			fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
 			fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
@@ -398,12 +399,12 @@ Shader* LightingSystem::getShader()
 
 		fBuffer.append("in vec3 FragPos;\n");
 		fBuffer.append("in vec3 Normal;\n");
-		fBuffer.append("in vec3 ViewPos;\n");
 		fBuffer.append("out vec4 color;\n");
+		fBuffer.append("uniform vec3 viewPos;\n");
 
 		fBuffer.append("void main()\n");
 		fBuffer.append("{\n");
-		fBuffer.append("    vec3 viewDir = normalize(ViewPos - FragPos);\n");
+		fBuffer.append("    vec3 viewDirection = normalize(viewPos - FragPos);\n");
 		fBuffer.append("    vec3 norm = Normal;\n");
 		fBuffer.append("    if(!gl_FrontFacing)\n");
 		fBuffer.append("		norm = -norm;\n");
@@ -411,27 +412,25 @@ Shader* LightingSystem::getShader()
 		if (dLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_DIR_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcDirLight(dirLights[i], norm, viewDir);\n");
+			fBuffer.append("        result += CalcDirLight(dirLights[i], norm, viewDirection);\n");
 		}
 		if (pLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_POINT_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);\n");
+			fBuffer.append("        result += CalcPointLight(pointLights[i], norm, FragPos, viewDirection);\n");
 		}
 		if (sLights.size() > 0)
 		{
 			fBuffer.append("    for(int i = 0; i < N_SPOT_LIGHTS; i++)\n");
-			fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDir);\n");
+			fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDirection);\n");
 		}
-		//fBuffer.append("    if(length(FragPos) < 10.f)\n");
-		//fBuffer.append("		result = vec3(1.f);\n");
 		fBuffer.append("    color = vec4(result, 1.0);\n");
 		//fBuffer.append("    if(!gl_FrontFacing)\n");
 		//fBuffer.append("		color.x = 1.f - color.x;\n");
 		fBuffer.append("}\n");
 	} // FRAGMENT SHADER
 
-	std::cout << fBuffer << std::endl;
+	//std::cout << fBuffer << std::endl;
 
 	m_bRefreshShader = false;
 

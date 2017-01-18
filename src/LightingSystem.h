@@ -19,7 +19,7 @@ public:
 	};
 
 	struct DLight : BasicLight {
-		glm::vec3 direction;
+		glm::vec3 position;
 	};
 
 	struct PLight : BasicLight {
@@ -48,7 +48,7 @@ public:
     // Uses the current shader
 	void update(glm::mat4 cameraTransform, Shader *s);
 
-	bool addDirectLight(glm::vec3 direction = glm::vec3(-1.0f)
+	bool addDirectLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.2f)
 		, glm::vec3 diffuse = glm::vec3(1.f)
 		, glm::vec3 specular = glm::vec3(1.f)
@@ -56,9 +56,9 @@ public:
 
 	bool addPointLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.05f)
-		, glm::vec3 diffuse = glm::vec3(0.8f)
-		, glm::vec3 specular = glm::vec3(1.0f)
-		, GLfloat constant = 1.0f
+		, glm::vec3 diffuse = glm::vec3(1.f)
+		, glm::vec3 specular = glm::vec3(1.f)
+		, GLfloat constant = 1.f
 		, GLfloat linear = 0.09f
 		, GLfloat quadratic = 0.032f
 		);

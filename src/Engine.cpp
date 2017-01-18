@@ -199,7 +199,7 @@ void Engine::init_lighting()
 	GLFWInputBroadcaster::getInstance().attach(m_pLightingSystem);
 
 	// Directional light
-	m_pLightingSystem->addDirectLight(glm::vec3(-1.f)
+	m_pLightingSystem->addDirectLight(glm::vec3(1.f)
 		, glm::vec3(0.1f)
 		, glm::vec3(1.f)
 		, glm::vec3(1.f)
