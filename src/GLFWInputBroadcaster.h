@@ -16,6 +16,8 @@ public:
 
 	bool keyPressed(const int glfwKeyCode);
 
+	bool mousePressed();
+
 	void poll();
 
 private:
@@ -27,7 +29,7 @@ private:
 	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 	bool m_arrbActiveKeys[1024];
-	bool m_bFirstMouse;
+	bool m_bFirstMouse, m_bMousePressed;
 	float m_fLastMouseX, m_fLastMouseY;
 
 	GLFWInputBroadcaster(GLFWInputBroadcaster const&) = delete; // no copies of singletons (C++11)

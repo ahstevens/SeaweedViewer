@@ -104,11 +104,11 @@ void Engine::update(float dt)
 {
 	m_pCamera->update(dt);
 
-	for (auto &pl : m_pLightingSystem->pLights)
-	{
-		float step = 180.f * dt;
-		pl.position = glm::vec3(glm::rotate(glm::mat4(), glm::radians(step), glm::vec3(0.f, 1.f, 0.f)) * glm::vec4(pl.position, 1.f));
-	}
+	//for (auto &pl : m_pLightingSystem->pLights)
+	//{
+	//	float step = 180.f * dt;
+	//	pl.position = glm::vec3(glm::rotate(glm::mat4(), glm::radians(step), glm::vec3(0.f, 1.f, 0.f)) * glm::vec4(pl.position, 1.f));
+	//}
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
@@ -179,7 +179,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwMakeContextCurrent(mWindow);
 
 	// GLFW Options
-	glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;

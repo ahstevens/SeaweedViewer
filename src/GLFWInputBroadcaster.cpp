@@ -25,6 +25,7 @@ void GLFWInputBroadcaster::init(GLFWwindow * window)
 
 	memset(m_arrbActiveKeys, 0, sizeof m_arrbActiveKeys);
 	m_bFirstMouse = true;
+	m_bMousePressed = false;
 	m_fLastMouseX = 0;
 	m_fLastMouseY = 0;
 }
@@ -32,6 +33,11 @@ void GLFWInputBroadcaster::init(GLFWwindow * window)
 bool GLFWInputBroadcaster::keyPressed(const int glfwKeyCode)
 {
 	return m_arrbActiveKeys[glfwKeyCode];
+}
+
+bool GLFWInputBroadcaster::mousePressed()
+{
+	return m_bMousePressed;
 }
 
 void GLFWInputBroadcaster::poll()
@@ -70,9 +76,15 @@ void GLFWInputBroadcaster::key_callback(GLFWwindow* window, int key, int scancod
 void GLFWInputBroadcaster::mouse_button_callback(GLFWwindow * window, int button, int action, int mods)
 {
 	if (action == GLFW_PRESS)
+	{
+		getInstance().m_bMousePressed = true;
 		getInstance().notify(NULL, BroadcastSystem::EVENT::MOUSE_CLICK, &button);
+	}
 	else if (action == GLFW_RELEASE)
+	{
+		getInstance().m_bMousePressed = false;
 		getInstance().notify(NULL, BroadcastSystem::EVENT::MOUSE_UNCLICK, &button);
+	}
 }
 
 void GLFWInputBroadcaster::mouse_position_callback(GLFWwindow * window, double xpos, double ypos)

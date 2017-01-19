@@ -24,7 +24,7 @@ const glm::vec3 m_vec3DefaultUp       =  glm::vec3(0.f, 1.f, 0.f);
 const float m_fDefaultYaw             = -90.f;
 const float m_fDefaultPitch           =   0.f;
 const float m_fDefaultSpeed           =  30.f;
-const float m_fDefaultSensitivity     =   0.25f;
+const float m_fDefaultSensitivity     =   0.065f;
 const float m_fDefaultZoom            =  45.f;
 const float m_fDefaultZoomMin         =  45.f;
 const float m_fDefaultZoomMax         =   1.f;
@@ -107,9 +107,12 @@ public:
 
 		if (event == BroadcastSystem::EVENT::MOUSE_MOVE)
 		{
-			float offset[2];
-			memcpy(offset, data, sizeof(offset)); // recover array
-			look(offset[0], offset[1]);
+			if (GLFWInputBroadcaster::getInstance().mousePressed())
+			{
+				float offset[2];
+				memcpy(offset, data, sizeof(offset)); // recover array
+				look(-offset[0], -offset[1]);
+			}
 		}
 
 		if (event == BroadcastSystem::EVENT::MOUSE_SCROLL)
