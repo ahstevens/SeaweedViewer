@@ -46,7 +46,7 @@ public:
 	~LightingSystem();
 
     // Uses the current shader
-	void update(glm::mat4 cameraTransform, Shader *s);
+	void update(glm::mat4 view, Shader *s);
 
 	bool addDirectLight(glm::vec3 position = glm::vec3(1.0f)
 		, glm::vec3 ambient = glm::vec3(0.2f)
@@ -76,7 +76,8 @@ public:
 		, bool attachToCamera = true
 		);
 
-	Shader* getShader();
+	Shader* generateLightingShader();
+	Shader* generateLightingVisualizationShader();
 
 	void draw(Shader s);
 

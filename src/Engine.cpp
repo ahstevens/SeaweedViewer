@@ -124,6 +124,7 @@ void Engine::update(float dt)
 		shader->use();
 
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "worldRotation"), 1, GL_FALSE, glm::value_ptr(m_mat4WorldRotation));
 		glUniformMatrix4fv(glGetUniformLocation(shader->m_nProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		
 		if (shader == m_pShaderLighting)
@@ -223,36 +224,14 @@ void Engine::init_camera()
 
 void Engine::init_shaders()
 {
-	std::string vBuffer, fBuffer, gBuffer;
-
 	// Build and compile our shader program
-	m_pShaderLighting = m_pLightingSystem->getShader();
+	m_pShaderLighting = m_pLightingSystem->generateLightingShader();
 	m_vpShaders.push_back(m_pShaderLighting);
 
-	vBuffer.append("#version 330 core\n");
-	vBuffer.append("layout(location = 0) in vec3 position;\n");
-	vBuffer.append("uniform mat4 model;\n");
-	vBuffer.append("uniform mat4 view;\n");
-	vBuffer.append("uniform mat4 projection;\n");
-	vBuffer.append("void main()\n");
-	vBuffer.append("{\n");
-	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
-	vBuffer.append("}\n");
-
-	fBuffer.append("#version 330 core\n");
-	fBuffer.append("out vec4 color;\n");
-	fBuffer.append("uniform vec3 col;\n");
-	fBuffer.append("void main()\n");
-	fBuffer.append("{\n");
-	fBuffer.append("	color = vec4(col.r, col.g, col.b, 1.0f);\n");
-	fBuffer.append("}\n");
-
-	m_pShaderLamps = new Shader(vBuffer.c_str(), fBuffer.c_str());
+	m_pShaderLamps = m_pLightingSystem->generateLightingVisualizationShader();
 	m_vpShaders.push_back(m_pShaderLamps);
 
-	vBuffer.clear();
-	fBuffer.clear();
-	gBuffer.clear();
+	std::string vBuffer, fBuffer, gBuffer;
 
 	vBuffer.append("#version 330 core\n");
 	vBuffer.append("layout(location = 0) in vec3 position;\n");

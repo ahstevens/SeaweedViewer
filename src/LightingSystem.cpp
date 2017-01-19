@@ -27,23 +27,23 @@ LightingSystem::~LightingSystem()
 }
 
 // Uses the current shader
-void LightingSystem::update(glm::mat4 cameraTransform, Shader *s)
+void LightingSystem::update(glm::mat4 view, Shader *s)
 {
 	if (m_bRefreshShader || s == nullptr)
 	{
 		if (s)
 			delete s;
-		s = getShader();
+		s = generateLightingShader();
 	}
 	
 	s->use();
 
 	glm::vec3 black(0.f);
 
-	glm::mat4 invCamMat = glm::inverse(cameraTransform);
-	glm::vec3 camPos(invCamMat[3].x, invCamMat[3].y, invCamMat[3].z);
-	glm::vec3 camFwd(invCamMat[2].x, invCamMat[2].y, invCamMat[2].z);
-	
+	glm::mat4 invView = glm::inverse(view);
+	glm::vec3 camPos(invView[3].x, invView[3].y, invView[3].z);
+	glm::vec3 camFwd(invView[2].x, invView[2].y, invView[2].z);
+
 	glUniform3fv(glGetUniformLocation(s->m_nProgram, "viewPos"), 1, glm::value_ptr(camPos));
 
 	// Directional light
@@ -275,7 +275,7 @@ void LightingSystem::setupLightMesh()
 	m_bMeshInitialized = true;
 }
 
-Shader* LightingSystem::getShader()
+Shader* LightingSystem::generateLightingShader()
 {
 	std::string vBuffer, fBuffer;
 
@@ -287,13 +287,14 @@ Shader* LightingSystem::getShader()
 		vBuffer.append("out vec3 Normal;\n");
 		vBuffer.append("out vec3 FragPos;\n");
 		vBuffer.append("uniform mat4 model;\n");
+		vBuffer.append("uniform mat4 worldRotation;\n");
 		vBuffer.append("uniform mat4 view;\n");
 		vBuffer.append("uniform mat4 projection;\n");
 		vBuffer.append("void main()\n");
 		vBuffer.append("{\n");
-		vBuffer.append("	gl_Position = projection * view *  model * vec4(position, 1.0f);\n");
-		vBuffer.append("	FragPos = vec3(model * vec4(position, 1.0f));\n");
-		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
+		vBuffer.append("	gl_Position = projection * view * worldRotation * model * vec4(position, 1.0f);\n");
+		vBuffer.append("	FragPos = vec3(worldRotation * model * vec4(position, 1.0f));\n");
+		vBuffer.append("	Normal = normalize(mat3(transpose(inverse(worldRotation * model))) * normal);\n"); // this preserves correct normals under nonuniform scaling by using the normal matrix
 		vBuffer.append("}\n");
 	} // VERTEX SHADER
 
@@ -425,14 +426,38 @@ Shader* LightingSystem::getShader()
 			fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDirection);\n");
 		}
 		fBuffer.append("    color = vec4(result, 1.0);\n");
-		//fBuffer.append("    if(!gl_FrontFacing)\n");
-		//fBuffer.append("		color.x = 1.f - color.x;\n");
+       
 		fBuffer.append("}\n");
 	} // FRAGMENT SHADER
 
 	//std::cout << fBuffer << std::endl;
 
 	m_bRefreshShader = false;
+
+	return new Shader(vBuffer.c_str(), fBuffer.c_str());
+}
+
+Shader * LightingSystem::generateLightingVisualizationShader()
+{
+	std::string vBuffer, fBuffer;
+
+	vBuffer.append("#version 330 core\n");
+	vBuffer.append("layout(location = 0) in vec3 position;\n");
+	vBuffer.append("uniform mat4 model;\n");
+	vBuffer.append("uniform mat4 view;\n");
+	vBuffer.append("uniform mat4 projection;\n");
+	vBuffer.append("void main()\n");
+	vBuffer.append("{\n");
+	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
+	vBuffer.append("}\n");
+
+	fBuffer.append("#version 330 core\n");
+	fBuffer.append("out vec4 color;\n");
+	fBuffer.append("uniform vec3 col;\n");
+	fBuffer.append("void main()\n");
+	fBuffer.append("{\n");
+	fBuffer.append("	color = vec4(col.r, col.g, col.b, 1.0f);\n");
+	fBuffer.append("}\n");
 
 	return new Shader(vBuffer.c_str(), fBuffer.c_str());
 }
