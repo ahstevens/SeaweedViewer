@@ -35,7 +35,7 @@ public:
 
 	Camera  *m_pCamera;
 	std::vector<Shader*> m_vpShaders;
-	Shader *m_pShaderLighting, *m_pShaderLamps, *m_pShaderNormals;
+	Shader *m_pShaderLighting, *m_pShaderNormals;
 
 	Icosphere* m_pSphere;
 	std::vector<ObjModel*> m_vpModels;

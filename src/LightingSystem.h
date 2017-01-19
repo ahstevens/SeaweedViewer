@@ -5,6 +5,7 @@
 
 #include "BroadcastSystem.h"
 #include "Shader.h"
+#include "Icosphere.h"
 
 #include <glm/glm.hpp>
 
@@ -77,19 +78,18 @@ public:
 		);
 
 	Shader* generateLightingShader();
-	Shader* generateLightingVisualizationShader();
 
 	void draw(Shader s);
 
 	void receiveEvent(Object * obj, const int event, void * data);
 
-private:
-	GLuint m_uiVBO, m_uiVAO, m_uiEBO;
-	GLsizei m_nIndices;
-	GLboolean m_bMeshInitialized;
-	GLboolean m_bRefreshShader;
+	void showPointLights(bool yesno);
+	bool toggleShowPointLights();
 
-	void setupLightMesh();
+private:
+	GLboolean m_bRefreshShader, m_bDrawLightBulbs;
+
+	Icosphere *m_pLightBulb;
 };
 
 #endif

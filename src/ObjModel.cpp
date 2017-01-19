@@ -10,6 +10,7 @@
 ObjModel::ObjModel(std::string objFile)
 	: m_vec3DiffColor(glm::vec3(0.f, 0.8f, 0.f))
 	, m_vec3SpecColor(glm::vec3(0.f))
+	, m_vec3EmisColor(glm::vec3(0.f))
 {
 	load(objFile);
 	initGL();
@@ -147,6 +148,7 @@ void ObjModel::draw(Shader s)
 {
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.diffuse"), m_vec3DiffColor.r, m_vec3DiffColor.g, m_vec3DiffColor.b);
 	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.specular"), m_vec3SpecColor.r, m_vec3SpecColor.g, m_vec3SpecColor.b);
+	glUniform3f(glGetUniformLocation(s.m_nProgram, "material.emissive"), m_vec3EmisColor.r, m_vec3EmisColor.g, m_vec3EmisColor.b);
 	glUniform1f(glGetUniformLocation(s.m_nProgram, "material.shininess"), 32.f);
 
 	glUniformMatrix4fv(glGetUniformLocation(s.m_nProgram, "model"), 1, GL_FALSE, glm::value_ptr(m_mat4Model));

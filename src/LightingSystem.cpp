@@ -14,8 +14,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 LightingSystem::LightingSystem() 
-	: m_bMeshInitialized(false)
-	, m_bRefreshShader(true)
+	: m_bRefreshShader(true)
+	, m_bDrawLightBulbs(true)
+	, m_pLightBulb(NULL)
 {
 }
 
@@ -160,6 +161,12 @@ bool LightingSystem::addPointLight(glm::vec3 position, glm::vec3 ambient, glm::v
 
 	m_bRefreshShader = true;
 
+	if (!m_pLightBulb)
+	{
+		m_pLightBulb = new Icosphere(1, diffuse, specular);
+		m_pLightBulb->setScale(0.1f);
+	}
+
 	return true;
 }
 
@@ -189,27 +196,26 @@ bool LightingSystem::addSpotLight(glm::vec3 position, glm::vec3 direction, glm::
 
 void LightingSystem::draw(Shader s)
 {
-	if(!m_bMeshInitialized)
-		this->setupLightMesh();
+	if (!m_bDrawLightBulbs)
+		return;
 
-	glm::mat4 model;
-
-	glBindVertexArray(this->m_uiVAO);
 	for (GLuint i = 0; i < pLights.size(); ++i)
 	{
-		if(pLights[i].on)
-			glUniform3f(glGetUniformLocation(s.m_nProgram, "col"), pLights[i].diffuse.r, pLights[i].diffuse.g, pLights[i].diffuse.b);
+		m_pLightBulb->setPosition(pLights[i].position);
+
+		if (pLights[i].on)
+		{
+			m_pLightBulb->m_vec3DiffColor = pLights[i].diffuse;
+			m_pLightBulb->m_vec3SpecColor = pLights[i].specular;
+			m_pLightBulb->m_vec3EmisColor = pLights[i].diffuse;
+		}
 		else
-			glUniform3f(glGetUniformLocation(s.m_nProgram, "col"), 0.f, 0.f, 0.f);
+		{
+			m_pLightBulb->m_vec3DiffColor = m_pLightBulb->m_vec3SpecColor = m_pLightBulb->m_vec3EmisColor = glm::vec3(0.f);
+		}
 
-		model = glm::mat4();
-		model = glm::translate(model, pLights[i].position);
-		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-		glUniformMatrix4fv(glGetUniformLocation(s.m_nProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		glDrawElements(GL_TRIANGLES, this->m_nIndices, GL_UNSIGNED_INT, 0);
+		m_pLightBulb->draw(s);
 	}
-	glBindVertexArray(0);
-
 }
 
 void LightingSystem::receiveEvent(Object * obj, const int event, void * data)
@@ -225,54 +231,22 @@ void LightingSystem::receiveEvent(Object * obj, const int event, void * data)
 			for (auto &l : pLights) l.on = !l.on;
 		if (key == GLFW_KEY_3)
 			for (auto &l : sLights) l.on = !l.on;
+		if (key == GLFW_KEY_3)
+			for (auto &l : sLights) l.on = !l.on;
+		if (key == GLFW_KEY_GRAVE_ACCENT)
+			toggleShowPointLights();
 	}
 }
 
-void LightingSystem::setupLightMesh()
+void LightingSystem::showPointLights(bool yesno)
 {
-	// Construct light geometry
-	std::vector<glm::vec3> vertices;
-	std::vector<GLuint> indices;
+	m_bDrawLightBulbs = yesno;
+}
 
-	glm::vec3 frontBotLeft = glm::vec3(-0.5f, -0.5f, 0.5f); // 0
-	glm::vec3 frontBotRight = glm::vec3(0.5f, -0.5f, 0.5f); // 1
-	glm::vec3 frontTopRight = glm::vec3(0.5f, 0.5f, 0.5f);  // 2
-	glm::vec3 frontTopLeft = glm::vec3(-0.5f, 0.5f, 0.5f);  // 3
-	glm::vec3 backBotRight = glm::vec3(0.5f, -0.5f, -0.5f); // 4
-	glm::vec3 backBotLeft = glm::vec3(-0.5f, -0.5f, -0.5f); // 5
-	glm::vec3 backTopLeft = glm::vec3(-0.5f, 0.5f, -0.5f);  // 6
-	glm::vec3 backTopRight = glm::vec3(0.5f, 0.5f, -0.5f);  // 7
-
-	vertices = { frontBotLeft, frontBotRight, frontTopRight, frontTopLeft,
-					backBotRight, backBotLeft, backTopLeft, backTopRight };
-		
-	indices = { 0, 1, 2, 2, 3, 0,   // Face 1
-				4, 5, 6, 6, 7, 4,   // Face 2
-				1, 4, 7, 7, 2, 1,   // Face 3
-				5, 0, 3, 3, 6, 5,   // Face 4
-				3, 2, 7, 7, 6, 3,   // Face 5
-				1, 0, 5, 5, 4, 1 }; // Face 6
-
-	// Send data and its description to GPU
-	glGenVertexArrays(1, &m_uiVAO);
-	glGenBuffers(1, &m_uiVBO);
-	glGenBuffers(1, &m_uiEBO);
-
-	glBindVertexArray(m_uiVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_uiVBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_uiEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
-
-	m_nIndices = static_cast<GLsizei>( indices.size() );
-
-	m_bMeshInitialized = true;
+bool LightingSystem::toggleShowPointLights()
+{
+	m_bDrawLightBulbs = !m_bDrawLightBulbs;
+	return m_bDrawLightBulbs;
 }
 
 Shader* LightingSystem::generateLightingShader()
@@ -305,6 +279,7 @@ Shader* LightingSystem::generateLightingShader()
 		fBuffer.append("struct Material {\n");
 		fBuffer.append("    vec3 diffuse;\n");
 		fBuffer.append("    vec3 specular;\n");
+		fBuffer.append("    vec3 emissive;\n");
 		fBuffer.append("    float shininess;\n");
 		fBuffer.append("};\n");
 		fBuffer.append("uniform Material material;\n");
@@ -425,6 +400,9 @@ Shader* LightingSystem::generateLightingShader()
 			fBuffer.append("    for(int i = 0; i < N_SPOT_LIGHTS; i++)\n");
 			fBuffer.append("        result += CalcSpotLight(spotLights[i], norm, FragPos, viewDirection);\n");
 		}
+		fBuffer.append("    result += material.emissive;\n");
+		//fBuffer.append("    vec3 gammaCorrection = vec3(1.f/2.2f);\n");
+		//fBuffer.append("    color = vec4(pow(result, gammaCorrection), 1.0);\n");
 		fBuffer.append("    color = vec4(result, 1.0);\n");
        
 		fBuffer.append("}\n");
@@ -433,31 +411,6 @@ Shader* LightingSystem::generateLightingShader()
 	//std::cout << fBuffer << std::endl;
 
 	m_bRefreshShader = false;
-
-	return new Shader(vBuffer.c_str(), fBuffer.c_str());
-}
-
-Shader * LightingSystem::generateLightingVisualizationShader()
-{
-	std::string vBuffer, fBuffer;
-
-	vBuffer.append("#version 330 core\n");
-	vBuffer.append("layout(location = 0) in vec3 position;\n");
-	vBuffer.append("uniform mat4 model;\n");
-	vBuffer.append("uniform mat4 view;\n");
-	vBuffer.append("uniform mat4 projection;\n");
-	vBuffer.append("void main()\n");
-	vBuffer.append("{\n");
-	vBuffer.append("	gl_Position = projection * view * model * vec4(position, 1.0f);\n");
-	vBuffer.append("}\n");
-
-	fBuffer.append("#version 330 core\n");
-	fBuffer.append("out vec4 color;\n");
-	fBuffer.append("uniform vec3 col;\n");
-	fBuffer.append("void main()\n");
-	fBuffer.append("{\n");
-	fBuffer.append("	color = vec4(col.r, col.g, col.b, 1.0f);\n");
-	fBuffer.append("}\n");
 
 	return new Shader(vBuffer.c_str(), fBuffer.c_str());
 }

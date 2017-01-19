@@ -11,7 +11,6 @@ Engine::Engine(int argc, char* argv[])
 	, m_fLastTime(0.f)
 	, m_pCamera(NULL)
 	, m_pShaderLighting(NULL)
-	, m_pShaderLamps(NULL)
 	, m_pShaderNormals(NULL)
 	, m_pSphere(NULL)
 {
@@ -104,11 +103,13 @@ void Engine::update(float dt)
 {
 	m_pCamera->update(dt);
 
-	//for (auto &pl : m_pLightingSystem->pLights)
-	//{
-	//	float step = 180.f * dt;
-	//	pl.position = glm::vec3(glm::rotate(glm::mat4(), glm::radians(step), glm::vec3(0.f, 1.f, 0.f)) * glm::vec4(pl.position, 1.f));
-	//}
+	for (auto &pl : m_pLightingSystem->pLights)
+	{
+		float step = 180.f * dt;
+		pl.position = glm::vec3(glm::rotate(glm::mat4(), glm::radians(step), glm::vec3(0.f, 1.f, 0.f)) * glm::vec4(pl.position, 1.f));
+		pl.diffuse = (glm::normalize(pl.position) + glm::vec3(1.f)) / glm::vec3(2.f);
+		pl.specular = (glm::normalize(pl.position) + glm::vec3(1.f)) / glm::vec3(2.f);
+	}
 
 	// Create camera transformations
 	glm::mat4 view = m_pCamera->getViewMatrix();
@@ -138,7 +139,7 @@ void Engine::render()
 {
 	// OpenGL options
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_MULTISAMPLE);
 
 	// Background Fill Color
 	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -148,13 +149,10 @@ void Engine::render()
 	{
 		shader->use();
 
-		if (shader == m_pShaderLamps)
-		{
-			m_pLightingSystem->draw(*shader);
-			continue;
-		}
+		m_pLightingSystem->draw(*shader);
 
 		m_pSphere->draw(*shader);
+
 		for (auto const &m : m_vpModels)
 			m->draw(*shader);
 	}
@@ -169,7 +167,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	//glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* mWindow = glfwCreateWindow(m_iWidth, m_iHeight, winName.c_str(), nullptr, nullptr);
 	// Check for Valid Context
 	if (mWindow == nullptr)
@@ -179,7 +177,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwMakeContextCurrent(mWindow);
 
 	// GLFW Options
-	//glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // capture cursor and disable it
 
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
@@ -227,9 +225,6 @@ void Engine::init_shaders()
 	// Build and compile our shader program
 	m_pShaderLighting = m_pLightingSystem->generateLightingShader();
 	m_vpShaders.push_back(m_pShaderLighting);
-
-	m_pShaderLamps = m_pLightingSystem->generateLightingVisualizationShader();
-	m_vpShaders.push_back(m_pShaderLamps);
 
 	std::string vBuffer, fBuffer, gBuffer;
 

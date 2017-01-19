@@ -5,8 +5,9 @@
 #include <glm/glm.hpp>
 
 #include "Shader.h"
+#include "Object.h"
 
-class Icosphere
+class Icosphere : public Object
 {
 public:	
 	Icosphere(int recursionLevel, glm::vec3 diffuseColor = glm::vec3(1.f), glm::vec3 specularColor = glm::vec3(1.f));
@@ -20,7 +21,6 @@ public:
 	std::vector<glm::vec3> getUnindexedVertices(void);
 
 private:	
-
     struct TriangleIndices
     {
         int v1;
@@ -46,6 +46,7 @@ private:
 
 
 public:
+	glm::vec3 m_vec3DiffColor, m_vec3SpecColor, m_vec3EmisColor;
 	void initGL();
 	void draw(Shader s);
 
@@ -56,7 +57,5 @@ private:
 	};
 
 	GLuint m_glVAO, m_glVBO, m_glEBO;
-	glm::mat4 m_mat4Model;
-	glm::vec3 m_vec3DiffColor, m_vec3SpecColor;
 };
 

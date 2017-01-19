@@ -31,6 +31,6 @@ private:
 
 	GLuint m_glVAO, m_glVBO, m_glEBO;
 	glm::mat4 m_mat4Model;
-	glm::vec3 m_vec3DiffColor, m_vec3SpecColor;
+	glm::vec3 m_vec3DiffColor, m_vec3SpecColor, m_vec3EmisColor;
 };
 
