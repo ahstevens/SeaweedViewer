@@ -4,6 +4,16 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+glm::vec3 g_vec3Ambient(0.1f, 0.1f, 0.1f);
+glm::vec3 g_vec3Diffuse(0.f, 0.7f, 0.f);
+glm::vec3 g_vec3Specular(0.f, 0.f, 0.f);
+glm::vec3 g_vec3Emissive(0.f, 0.f, 0.f);
+float g_fShininess(32.f);
+
+float *g_pfCurrentEditValue = NULL;
+float g_fEditValueDelta = 0.1f;
+
+
 Engine::Engine(int argc, char* argv[])
 	: m_pWindow(NULL)
 	, m_pLightingSystem(NULL)
@@ -33,6 +43,49 @@ void Engine::receiveEvent(Object * obj, const int event, void * data)
 			m_mat4WorldRotation = glm::rotate(m_mat4WorldRotation, glm::radians(1.f), glm::vec3(0.f, 1.f, 0.f));
 		if (key == GLFW_KEY_LEFT)
 			m_mat4WorldRotation = glm::rotate(m_mat4WorldRotation, glm::radians(-1.f), glm::vec3(0.f, 1.f, 0.f));
+
+		if (key == GLFW_KEY_KP_7)
+			g_pfCurrentEditValue = &g_vec3Ambient.r;
+		if (key == GLFW_KEY_KP_8)
+			g_pfCurrentEditValue = &g_vec3Ambient.g;
+		if (key == GLFW_KEY_KP_9)
+			g_pfCurrentEditValue = &g_vec3Ambient.b;
+
+		if (key == GLFW_KEY_KP_4)
+			g_pfCurrentEditValue = &g_vec3Diffuse.r;
+		if (key == GLFW_KEY_KP_5)
+			g_pfCurrentEditValue = &g_vec3Diffuse.g;
+		if (key == GLFW_KEY_KP_6)
+			g_pfCurrentEditValue = &g_vec3Diffuse.b;
+
+		if (key == GLFW_KEY_KP_1)
+			g_pfCurrentEditValue = &g_vec3Specular.r;
+		if (key == GLFW_KEY_KP_2)
+			g_pfCurrentEditValue = &g_vec3Specular.g;
+		if (key == GLFW_KEY_KP_3)
+			g_pfCurrentEditValue = &g_vec3Specular.b;
+
+		if (key == GLFW_KEY_KP_0)
+			g_pfCurrentEditValue = &g_fShininess;
+
+		if (key == GLFW_KEY_KP_ADD)
+		{
+			if (g_pfCurrentEditValue)
+			{
+				*g_pfCurrentEditValue += g_fEditValueDelta;
+				if (*g_pfCurrentEditValue > 1.f)
+					*g_pfCurrentEditValue = 1.f;
+			}
+		}
+		if (key == GLFW_KEY_KP_SUBTRACT)
+		{
+			if (g_pfCurrentEditValue)
+			{
+				*g_pfCurrentEditValue -= g_fEditValueDelta;
+				if (*g_pfCurrentEditValue < 0.f)
+					*g_pfCurrentEditValue = 0.f;
+			}
+		}
 	}
 
 	if (event == BroadcastSystem::EVENT::MOUSE_UNCLICK)
@@ -139,7 +192,7 @@ void Engine::render()
 {
 	// OpenGL options
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
 
 	// Background Fill Color
 	glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -149,9 +202,16 @@ void Engine::render()
 	{
 		shader->use();
 
-		m_pLightingSystem->draw(*shader);
+		//m_pLightingSystem->draw(*shader);
 
-		m_pSphere->draw(*shader);
+		//m_pSphere->draw(*shader);
+
+
+		glUniform3fv(glGetUniformLocation(shader->m_nProgram, "material.ambient"), 1, glm::value_ptr(g_vec3Ambient));
+		glUniform3fv(glGetUniformLocation(shader->m_nProgram, "material.diffuse"), 1, glm::value_ptr(g_vec3Diffuse));
+		glUniform3fv(glGetUniformLocation(shader->m_nProgram, "material.specular"), 1, glm::value_ptr(g_vec3Specular));
+		glUniform3fv(glGetUniformLocation(shader->m_nProgram, "material.emissive"), 1, glm::value_ptr(g_vec3Emissive));
+		glUniform1f(glGetUniformLocation(shader->m_nProgram, "material.shininess"), g_fShininess);
 
 		for (auto const &m : m_vpModels)
 			m->draw(*shader);
@@ -167,6 +227,7 @@ GLFWwindow* Engine::init_gl_context(std::string winName)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_SAMPLES, 16);
 	//glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* mWindow = glfwCreateWindow(m_iWidth, m_iHeight, winName.c_str(), nullptr, nullptr);
 	// Check for Valid Context
@@ -199,16 +260,16 @@ void Engine::init_lighting()
 
 	// Directional light
 	m_pLightingSystem->addDirectLight(glm::vec3(1.f)
-		, glm::vec3(0.1f)
+		, glm::vec3(1.f)
 		, glm::vec3(1.f)
 		, glm::vec3(1.f)
 	);
 
 	// Positions of the point lights
-	m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, 5.f));
-	m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, -5.f));
-	m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, 5.f));
-	m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, -5.f));
+	//m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, 5.f));
+	//m_pLightingSystem->addPointLight(glm::vec3(5.f, 0.f, -5.f));
+	//m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, 5.f));
+	//m_pLightingSystem->addPointLight(glm::vec3(-5.f, 0.f, -5.f));
 
 	// Spotlight
 	//m_pLightingSystem->addSpotLight();

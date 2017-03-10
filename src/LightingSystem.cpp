@@ -277,6 +277,7 @@ Shader* LightingSystem::generateLightingShader()
 		fBuffer.append("#version 330 core\n");
 		
 		fBuffer.append("struct Material {\n");
+		fBuffer.append("    vec3 ambient;\n");
 		fBuffer.append("    vec3 diffuse;\n");
 		fBuffer.append("    vec3 specular;\n");
 		fBuffer.append("    vec3 emissive;\n");
@@ -300,7 +301,7 @@ Shader* LightingSystem::generateLightingShader()
 			fBuffer.append("    float diff = max(dot(normal, lightDir), 0.0);\n");
 			fBuffer.append("    vec3 reflectDir = reflect(-lightDir, normal);\n");
 			fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
-			fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+			fBuffer.append("    vec3 ambient = light.ambient * material.ambient;\n");
 			fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
 			fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
 			fBuffer.append("    return (ambient + diffuse + specular);\n");
@@ -327,7 +328,7 @@ Shader* LightingSystem::generateLightingShader()
 			fBuffer.append("    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);\n");
 			fBuffer.append("    float distance = length(light.position - fragPos);\n");
 			fBuffer.append("    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));\n");
-			fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+			fBuffer.append("    vec3 ambient = light.ambient * material.ambient;\n");
 			fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
 			fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
 			fBuffer.append("    ambient *= attenuation;\n");
@@ -363,7 +364,7 @@ Shader* LightingSystem::generateLightingShader()
 			fBuffer.append("    float theta = dot(lightDir, normalize(-light.direction));\n");
 			fBuffer.append("    float epsilon = light.cutOff - light.outerCutOff;\n");
 			fBuffer.append("    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);\n");
-			fBuffer.append("    vec3 ambient = light.ambient * material.diffuse;\n");
+			fBuffer.append("    vec3 ambient = light.ambient * material.ambient;\n");
 			fBuffer.append("    vec3 diffuse = light.diffuse * diff * material.diffuse;\n");
 			fBuffer.append("    vec3 specular = light.specular * spec * material.specular;\n");
 			fBuffer.append("    ambient *= attenuation * intensity;\n");
