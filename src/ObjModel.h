@@ -23,11 +23,19 @@ public:
 	void initGL();
 	void draw(Shader s);
 
+	std::vector<unsigned int> getIndices();
+	void setIndices(std::vector<unsigned int> inds);
+	std::vector<glm::vec3> getVertices();
+
+	std::string getName();
+
 private:
 	struct Vertex {
 		glm::vec3 pos;
 		glm::vec3 norm;
 	};
+
+	std::string m_strModelName;
 
 	GLuint m_glVAO, m_glVBO, m_glEBO;
 	glm::mat4 m_mat4Model;

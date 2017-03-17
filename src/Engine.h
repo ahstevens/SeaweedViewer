@@ -14,6 +14,8 @@
 #include "Icosphere.h" // example
 #include "ObjModel.h" // test
 
+#include <tribox3.h>
+
 #define MS_PER_UPDATE 0.0333333333f
 #define CAST_RAY_LEN 1000.f
 
@@ -26,8 +28,8 @@ public:
 	LightingSystem* m_pLightingSystem;
 
 	// Constants
-	const int m_iWidth = 1280;
-	const int m_iHeight = 800;
+	const int m_iWidth = 1920;
+	const int m_iHeight = 1200;
 	const float m_fStepSize = 1.f / 120.f;
 
 	float m_fDeltaTime;	// Time between current frame and last frame
@@ -66,4 +68,6 @@ private:
 	void init_camera();
 
 	void init_shaders();
+
+	float getTriangleSurfaceAreaInAABB(glm::vec3 triVert1, glm::vec3 triVert2, glm::vec3 triVert3, glm::vec3 bbMin, glm::vec3 bbMax);
 };

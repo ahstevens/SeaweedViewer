@@ -8,7 +8,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 ObjModel::ObjModel(std::string objFile)
-	: m_vec3DiffColor(glm::vec3(0.f, 0.8f, 0.f))
+	: m_strModelName(objFile)
+	, m_vec3DiffColor(glm::vec3(0.f, 0.8f, 0.f))
 	, m_vec3SpecColor(glm::vec3(0.f))
 	, m_vec3EmisColor(glm::vec3(0.f))
 {
@@ -157,4 +158,26 @@ void ObjModel::draw(Shader s)
 	glBindVertexArray(this->m_glVAO);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_vuiIndices.size()), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+}
+
+std::vector<unsigned int> ObjModel::getIndices()
+{
+	return m_vuiIndices;
+}
+
+void ObjModel::setIndices(std::vector<unsigned int> inds)
+{
+	m_vuiIndices = inds;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_glEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vuiIndices.size() * sizeof(GLuint), &m_vuiIndices[0], GL_STATIC_DRAW);
+}
+
+std::vector<glm::vec3> ObjModel::getVertices()
+{
+	return m_vvec3Vertices;
+}
+
+std::string ObjModel::getName()
+{
+	return m_strModelName;
 }

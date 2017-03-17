@@ -39,6 +39,43 @@ void Engine::receiveEvent(Object * obj, const int event, void * data)
 		int key;
 		memcpy(&key, data, sizeof(key));
 
+		if (key == GLFW_KEY_P)
+		{
+			float boxSize = 50.f; // cm
+			float totalAreaInside = 0.f;
+			for (auto const &obj : m_vpModels)
+			{
+				float modelAreaInside = 0.f;
+				std::vector<unsigned int> inds = obj->getIndices();
+				std::vector<glm::vec3> verts = obj->getVertices();
+				std::vector<unsigned int> indsRet;
+				for (std::vector<unsigned int>::iterator it = inds.begin(); it != inds.end(); it += 3)
+				{
+					float res = getTriangleSurfaceAreaInAABB(
+						verts[*(it + 0)],
+						verts[*(it + 1)],
+						verts[*(it + 2)],
+						glm::vec3(0.f),
+						glm::vec3(boxSize, boxSize, -boxSize)
+					);
+					
+					if (res > 0.f)
+					{
+						indsRet.push_back(*(it + 0));
+						indsRet.push_back(*(it + 1));
+						indsRet.push_back(*(it + 2));
+					}
+
+					modelAreaInside += res;
+				}
+				std::cout << "\tModel " << obj->getName() << std::endl;
+				std::cout << "\t\tSurface area inside " << boxSize << "-cm bounding box = " << modelAreaInside * 2.f << " cm^2" << std::endl;
+				totalAreaInside += modelAreaInside;
+				obj->setIndices(indsRet);
+			}
+			std::cout << "Total area inside " << boxSize << "-cm bounding box = " << totalAreaInside * 2.f << " cm^2" << std::endl;
+		}
+
 		if (key == GLFW_KEY_RIGHT)
 			m_mat4WorldRotation = glm::rotate(m_mat4WorldRotation, glm::radians(1.f), glm::vec3(0.f, 1.f, 0.f));
 		if (key == GLFW_KEY_LEFT)
@@ -336,4 +373,22 @@ void Engine::init_shaders()
 
 	m_pShaderNormals = new Shader(vBuffer.c_str(), fBuffer.c_str(), gBuffer.c_str());
 	//m_vpShaders.push_back(m_pShaderNormals);
+}
+
+float Engine::getTriangleSurfaceAreaInAABB(glm::vec3 triVert1, glm::vec3 triVert2, glm::vec3 triVert3, glm::vec3 bbMin, glm::vec3 bbMax)
+{
+	glm::vec3 boxCenter((bbMax - bbMin) * 0.5f);
+	glm::vec3 boxHalfExtents(abs(boxCenter));
+	float verts[3][3] = { 
+		{ triVert1.x, triVert1.y, triVert1.z },
+		{ triVert2.x, triVert2.y, triVert2.z },
+		{ triVert3.x, triVert3.y, triVert3.z } 
+	};
+
+	// No overlap
+	if (triBoxOverlap(glm::value_ptr(boxCenter), glm::value_ptr(boxHalfExtents), verts) == 0)
+		return 0.0f;
+
+	// Process overlap
+	return glm::length(glm::cross(triVert2 - triVert1, triVert3 - triVert1)) * 0.5;
 }
